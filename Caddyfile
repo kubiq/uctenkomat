@@ -1,0 +1,15 @@
+# Replace receipts.example.com with your real (sub)domain pointed at this VPS.
+# Caddy fetches + renews a Let's Encrypt cert automatically.
+receipts.example.com {
+	# Receipt uploads can be a few MB; LLM calls take a while.
+	request_body {
+		max_size 20MB
+	}
+
+	reverse_proxy api:3000 {
+		transport http {
+			read_timeout 60s
+			write_timeout 60s
+		}
+	}
+}

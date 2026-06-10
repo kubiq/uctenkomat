@@ -1,0 +1,21 @@
+# deps
+node_modules/
+**/node_modules/
+
+# secrets
+.env
+**/.env
+!**/.env.example
+
+# receipts (sample data / uploads)
+server/receipts/*
+!server/receipts/.gitkeep
+
+# expo / RN
+app/.expo/
+app/dist/
+app/web-build/
+
+# misc
+*.log
+.DS_Store
