@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: "700" },
   label: { fontSize: 13, color: "#475569", marginTop: 12, marginBottom: 4 },
   section: { fontSize: 16, fontWeight: "700", marginTop: 22, marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 15, backgroundColor: "#fff" },
+  input: { borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, fontSize: 15, backgroundColor: "#fff", color: "#0f172a" },
   supplierBox: { borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 10, padding: 12, gap: 4 },
   supplierName: { fontSize: 15, fontWeight: "600" },
   link: { color: "#2563eb", marginTop: 4 },

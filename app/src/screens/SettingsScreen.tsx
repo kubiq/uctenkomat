@@ -111,6 +111,7 @@ function Field({
         autoCorrect={false}
         secureTextEntry={secure}
         placeholder={placeholder}
+        placeholderTextColor="#94a3b8"
         value={value}
         onChangeText={onChange}
       />
@@ -126,7 +127,7 @@ const styles = StyleSheet.create({
   group: { fontSize: 16, fontWeight: "700", marginTop: 22, marginBottom: 6 },
   label: { fontSize: 13, color: "#475569", marginTop: 12, marginBottom: 4 },
   hint: { fontSize: 12, color: "#94a3b8", marginTop: 4 },
-  input: { borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 10, fontSize: 15 },
+  input: { borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 10, fontSize: 15, color: "#0f172a", backgroundColor: "#fff" },
   secondary: { marginTop: 24, paddingVertical: 14, borderRadius: 10, borderWidth: 1, borderColor: "#cbd5e1", alignItems: "center" },
   secondaryText: { color: "#334155", fontSize: 16, fontWeight: "500" },
   primary: { marginTop: 12, backgroundColor: "#2563eb", paddingVertical: 16, borderRadius: 12, alignItems: "center" },
