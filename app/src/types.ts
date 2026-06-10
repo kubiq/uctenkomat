@@ -38,7 +38,10 @@ export type CreatedExpense = {
   subject?: { id: number; name?: string; matchedBy?: string; created?: boolean };
 };
 
+// BYOK config — each user supplies their own keys, stored in expo-secure-store.
 export type Settings = {
-  baseUrl: string;
-  apiKey: string;
+  openaiApiKey: string;
+  fakturoidClientId: string;
+  fakturoidClientSecret: string;
+  fakturoidSlug: string; // account slug from the Fakturoid URL
 };

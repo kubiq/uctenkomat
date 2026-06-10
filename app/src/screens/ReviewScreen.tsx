@@ -9,7 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { createExpense, searchSubjects } from "../api";
+import { createExpense, searchSubjects } from "../fakturoid";
 import type { CreatedExpense, Receipt, Settings, Subject } from "../types";
 
 type Props = {
@@ -85,11 +85,8 @@ export default function ReviewScreen({ settings, initial, onDone, onBack }: Prop
     }
     setSubmitting(true);
     try {
-      // Omit subjectId -> server resolves by IČO; include it only when overriding.
-      const expense = await createExpense(settings, {
-        receipt,
-        subjectId: override?.id,
-      });
+      // Omit subjectId -> resolve by IČO; include it only when overriding.
+      const expense = await createExpense(settings, receipt, { subjectId: override?.id });
       onDone(expense);
     } catch (e: any) {
       Alert.alert("Could not create expense", e?.message ?? String(e));

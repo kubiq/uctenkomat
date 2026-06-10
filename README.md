@@ -1,70 +1,47 @@
 # invoice-extractor
 
-Photograph a Czech store receipt (účtenka) on your phone → a backend parses it into
-**line items + prices** with a vision LLM → you **review/edit** → it creates an expense
-(**náklad**) in Fakturoid. VAT is not extracted (a flat rate is applied on the Fakturoid
-side so the gross matches the receipt).
+A mobile app that photographs a Czech store receipt (účtenka), parses it into **line
+items + prices + per-line VAT** with a vision LLM, lets you **review/edit**, and creates an
+expense (**náklad**) in Fakturoid — all from the phone, no backend.
 
 ```
-[Expo app] --Bearer key--> [Node API on VPS] --> OpenAI (parse receipt)
-  camera/review                 |--> Fakturoid v3 (create náklad)
+[Expo app]  ──your OpenAI key──▶  OpenAI (photo → structured JSON)
+  capture / review / confirm
+            ──your Fakturoid creds──▶  Fakturoid v3 (match supplier by IČO, create náklad)
 ```
 
-## Layout
-```
-server/    Node API (parse + Fakturoid) + Dockerfile        → see server/ for env/run
-app/       Expo (React Native) mobile app
-docker-compose.yml + Caddyfile   deploy: API behind auto-HTTPS Caddy
-```
+## Bring your own keys (BYOK)
+The app holds no shared secrets. Each user enters, in **Settings** (stored in
+`expo-secure-store` on the device):
+- an **OpenAI API key** (parses the image — ~$0.01/receipt)
+- **Fakturoid** Client ID + Client Secret + account slug (creates the expense)
 
-## 1. Backend (local dev)
-```bash
-cd server
-cp .env.example .env     # set APP_API_KEY, EXTRACTOR_API_KEY, FAKTUROID_*
-npm install
-npm start                # http://localhost:3000
-```
-Quick check:
-```bash
-curl localhost:3000/api/health
-curl -H "Authorization: Bearer $APP_API_KEY" -F file=@receipts/test.jpg \
-     localhost:3000/api/receipts/parse
-```
-You can still use the CLI: `npm run extract -- receipts/test.jpg`.
-
-### API
-| Method | Path | Body | Returns |
-|---|---|---|---|
-| GET | `/api/health` | — | `{ok:true}` (public) |
-| POST | `/api/receipts/parse` | multipart `file` | `Receipt` JSON |
-| GET | `/api/subjects?query=` | — | supplier list |
-| POST | `/api/expenses` | `{receipt, subjectId, vatRate}` | `{id, number, url}` |
-
-All `/api/*` except health require `Authorization: Bearer <APP_API_KEY>`.
-
-## 2. Deploy (your VPS)
-1. Point a DNS A-record (e.g. `receipts.yourdomain.tld`) at the VPS.
-2. Put that domain in `Caddyfile` (replace `receipts.example.com`).
-3. Ensure `server/.env` is filled in.
-4. `docker compose up -d --build` → API runs behind Caddy with automatic HTTPS.
-5. Verify: `curl https://receipts.yourdomain.tld/api/health`.
-
-## 3. Mobile app
+## Run
 ```bash
 cd app
 npm install
-npx expo start            # open in Expo Go on your phone
+npx expo start          # open in Expo Go (SDK 54) on your phone
 ```
-On first launch open **Settings ⚙︎**, set the **Server URL** (your HTTPS domain) and the
-**API key** (`APP_API_KEY`), tap *Test connection*, Save. Then: take a photo → review the
-items → pick the supplier → set VAT rate → **Create expense**.
+See `app/README.md` for the SDK note and troubleshooting.
 
-> Native modules (camera) need a real device via Expo Go (or a dev build), not the web target.
+First launch → **Settings ⚙︎**: paste your OpenAI key and Fakturoid Client ID / Secret /
+slug, tap **Test connection**, Save. Then take a photo → review items, per-line VAT, and
+supplier (auto-matched by IČO, with manual override) → **Create expense**.
 
-## Cost
-~$0.01 per receipt on gpt-4o; the app downscales photos before upload to keep it down.
+## How it works
+- `app/src/openai.ts` — sends the downscaled photo to OpenAI with Structured Outputs and a
+  receipt JSON schema (`app/src/receipt.ts`).
+- `app/src/fakturoid.ts` — Fakturoid v3 client: OAuth token, search/create supplier by IČO,
+  create expense (per-line VAT, `vat_price_mode: from_total_with_vat`).
+- `app/src/screens/` — Capture, Review (edit + VAT reconciliation), Settings, Success.
 
-## Follow-ups (not built yet)
-- Auto-create/match Fakturoid subject by IČO/DIČ.
-- Toggle: one summary line vs per-item lines.
-- Offline queue + receipt history.
+## Notes
+- Native camera needs a real device (Expo Go or a dev build), not the web target.
+- A prior version used a Node/Express backend; it was removed in favor of BYOK app-direct.
+  It's still in git history if you ever want a managed backend (recommended if this goes
+  public — see below).
+
+## If this ever goes public / to a store
+BYOK gets clunky (per-user key setup) and storing each user's Fakturoid secret on-device is
+a powerful credential. At that point a managed backend — users authorize via Fakturoid
+OAuth redirect and you hold tokens server-side — is the cleaner model.

@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { checkHealth } from "../api";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { checkOpenAiKey } from "../openai";
+import { checkFakturoid } from "../fakturoid";
 import { saveSettings } from "../storage";
-import { normalizeBaseUrl } from "../url";
 import type { Settings } from "../types";
 
 type Props = {
@@ -12,46 +12,55 @@ type Props = {
 };
 
 export default function SettingsScreen({ initial, onSaved, onBack }: Props) {
-  const [baseUrl, setBaseUrl] = useState(initial.baseUrl);
-  const [apiKey, setApiKey] = useState(initial.apiKey);
+  const [s, setS] = useState<Settings>(initial);
   const [testing, setTesting] = useState(false);
 
+  const set = (patch: Partial<Settings>) => setS((prev) => ({ ...prev, ...patch }));
+
   async function test() {
-    const r = normalizeBaseUrl(baseUrl);
-    if ("error" in r) {
-      Alert.alert("Invalid URL", r.error);
-      return;
-    }
-    setBaseUrl(r.url); // reflect the corrected URL (e.g. http:// prepended)
     setTesting(true);
     try {
-      const ok = await checkHealth(r.url);
-      Alert.alert(ok ? "Connected" : "No response", ok ? "Server is reachable." : "Health check failed.");
+      const openaiOk = s.openaiApiKey ? await checkOpenAiKey(s.openaiApiKey.trim()) : false;
+      let fakturoidOk = false;
+      try {
+        fakturoidOk = await checkFakturoid({
+          ...s,
+          fakturoidClientId: s.fakturoidClientId.trim(),
+          fakturoidClientSecret: s.fakturoidClientSecret.trim(),
+          fakturoidSlug: s.fakturoidSlug.trim(),
+        });
+      } catch {
+        fakturoidOk = false;
+      }
+      Alert.alert(
+        "Connection test",
+        `OpenAI: ${openaiOk ? "✓ ok" : "✗ failed"}\nFakturoid: ${fakturoidOk ? "✓ ok" : "✗ failed"}`,
+      );
     } catch (e: any) {
-      Alert.alert("Connection failed", e?.message ?? String(e));
+      Alert.alert("Test failed", e?.message ?? String(e));
     } finally {
       setTesting(false);
     }
   }
 
   async function save() {
-    const r = normalizeBaseUrl(baseUrl);
-    if ("error" in r) {
-      Alert.alert("Invalid URL", r.error);
+    const trimmed: Settings = {
+      openaiApiKey: s.openaiApiKey.trim(),
+      fakturoidClientId: s.fakturoidClientId.trim(),
+      fakturoidClientSecret: s.fakturoidClientSecret.trim(),
+      fakturoidSlug: s.fakturoidSlug.trim().replace(/^https?:\/\/[^/]+\//, "").replace(/\/.*$/, ""),
+    };
+    const missing = Object.entries(trimmed).filter(([, v]) => !v).map(([k]) => k);
+    if (missing.length) {
+      Alert.alert("Missing fields", `Please fill in: ${missing.join(", ")}`);
       return;
     }
-    if (!apiKey.trim()) {
-      Alert.alert("API key required", "Enter the API key (APP_API_KEY from the server).");
-      return;
-    }
-    const next = { baseUrl: r.url, apiKey: apiKey.trim() };
-    setBaseUrl(r.url);
-    await saveSettings(next);
-    onSaved(next);
+    await saveSettings(trimmed);
+    onSaved(trimmed);
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 48 }}>
       <View style={styles.headerRow}>
         <Pressable onPress={onBack} hitSlop={12}>
           <Text style={styles.back}>‹ Back</Text>
@@ -60,28 +69,15 @@ export default function SettingsScreen({ initial, onSaved, onBack }: Props) {
         <View style={{ width: 48 }} />
       </View>
 
-      <Text style={styles.label}>Server URL</Text>
-      <TextInput
-        style={styles.input}
-        autoCapitalize="none"
-        autoCorrect={false}
-        keyboardType="url"
-        placeholder="http://10.69.69.200:3300"
-        value={baseUrl}
-        onChangeText={setBaseUrl}
-      />
-      <Text style={styles.hint}>Include the protocol — http:// for LAN dev, https:// for a deployed server.</Text>
+      <Text style={styles.group}>OpenAI</Text>
+      <Field label="API key" value={s.openaiApiKey} onChange={(t) => set({ openaiApiKey: t })} secure placeholder="sk-…" />
+      <Text style={styles.hint}>Your own key from platform.openai.com. ~$0.01 per receipt.</Text>
 
-      <Text style={styles.label}>API key</Text>
-      <TextInput
-        style={styles.input}
-        autoCapitalize="none"
-        autoCorrect={false}
-        secureTextEntry
-        placeholder="APP_API_KEY"
-        value={apiKey}
-        onChangeText={setApiKey}
-      />
+      <Text style={styles.group}>Fakturoid</Text>
+      <Text style={styles.hint}>Create an app in Fakturoid → Nastavení → API / Propojení aplikací (Client Credentials).</Text>
+      <Field label="Client ID" value={s.fakturoidClientId} onChange={(t) => set({ fakturoidClientId: t })} />
+      <Field label="Client secret" value={s.fakturoidClientSecret} onChange={(t) => set({ fakturoidClientSecret: t })} secure />
+      <Field label="Account slug" value={s.fakturoidSlug} onChange={(t) => set({ fakturoidSlug: t })} placeholder="from app.fakturoid.cz/<slug>/…" />
 
       <Pressable style={styles.secondary} onPress={test} disabled={testing}>
         <Text style={styles.secondaryText}>{testing ? "Testing…" : "Test connection"}</Text>
@@ -89,17 +85,47 @@ export default function SettingsScreen({ initial, onSaved, onBack }: Props) {
       <Pressable style={styles.primary} onPress={save}>
         <Text style={styles.primaryText}>Save</Text>
       </Pressable>
-    </View>
+    </ScrollView>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  secure,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (t: string) => void;
+  secure?: boolean;
+  placeholder?: string;
+}) {
+  return (
+    <>
+      <Text style={styles.label}>{label}</Text>
+      <TextInput
+        style={styles.input}
+        autoCapitalize="none"
+        autoCorrect={false}
+        secureTextEntry={secure}
+        placeholder={placeholder}
+        value={value}
+        onChangeText={onChange}
+      />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, paddingTop: 56, backgroundColor: "#fff" },
-  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
   back: { color: "#2563eb", fontSize: 16 },
   title: { fontSize: 20, fontWeight: "700" },
-  label: { fontSize: 13, color: "#475569", marginTop: 16, marginBottom: 4 },
-  hint: { fontSize: 12, color: "#94a3b8", marginTop: 6 },
+  group: { fontSize: 16, fontWeight: "700", marginTop: 22, marginBottom: 6 },
+  label: { fontSize: 13, color: "#475569", marginTop: 12, marginBottom: 4 },
+  hint: { fontSize: 12, color: "#94a3b8", marginTop: 4 },
   input: { borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 10, fontSize: 15 },
   secondary: { marginTop: 24, paddingVertical: 14, borderRadius: 10, borderWidth: 1, borderColor: "#cbd5e1", alignItems: "center" },
   secondaryText: { color: "#334155", fontSize: 16, fontWeight: "500" },

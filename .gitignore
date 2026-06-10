@@ -19,3 +19,6 @@ app/web-build/
 # misc
 *.log
 .DS_Store
+
+# preserved secrets backup from old server/.env
+/keys.backup.env

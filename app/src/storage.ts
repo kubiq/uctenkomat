@@ -1,20 +1,31 @@
 import * as SecureStore from "expo-secure-store";
 import type { Settings } from "./types";
 
-const BASE_URL_KEY = "baseUrl";
-const API_KEY_KEY = "apiKey";
+// SecureStore keys must be alphanumeric/._- ; map each setting field to one.
+const KEYS: Record<keyof Settings, string> = {
+  openaiApiKey: "openai_api_key",
+  fakturoidClientId: "fakturoid_client_id",
+  fakturoidClientSecret: "fakturoid_client_secret",
+  fakturoidSlug: "fakturoid_slug",
+};
 
 export async function loadSettings(): Promise<Settings> {
-  const [baseUrl, apiKey] = await Promise.all([
-    SecureStore.getItemAsync(BASE_URL_KEY),
-    SecureStore.getItemAsync(API_KEY_KEY),
-  ]);
-  return { baseUrl: baseUrl ?? "", apiKey: apiKey ?? "" };
+  const entries = await Promise.all(
+    (Object.keys(KEYS) as (keyof Settings)[]).map(
+      async (k) => [k, (await SecureStore.getItemAsync(KEYS[k])) ?? ""] as const,
+    ),
+  );
+  return Object.fromEntries(entries) as Settings;
 }
 
-export async function saveSettings({ baseUrl, apiKey }: Settings): Promise<void> {
-  await Promise.all([
-    SecureStore.setItemAsync(BASE_URL_KEY, baseUrl.trim()),
-    SecureStore.setItemAsync(API_KEY_KEY, apiKey.trim()),
-  ]);
+export async function saveSettings(s: Settings): Promise<void> {
+  await Promise.all(
+    (Object.keys(KEYS) as (keyof Settings)[]).map((k) =>
+      SecureStore.setItemAsync(KEYS[k], (s[k] ?? "").trim()),
+    ),
+  );
+}
+
+export function isConfigured(s: Settings): boolean {
+  return Boolean(s.openaiApiKey && s.fakturoidClientId && s.fakturoidClientSecret && s.fakturoidSlug);
 }

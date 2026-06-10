@@ -9,7 +9,8 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
-import { parseReceipt } from "../api";
+import { parseReceipt } from "../openai";
+import { isConfigured } from "../storage";
 import type { Receipt, Settings } from "../types";
 
 type Props = {
@@ -18,19 +19,20 @@ type Props = {
   onOpenSettings: () => void;
 };
 
-// Downscale before upload: smaller upload + fewer image tokens (lower cost/latency).
-async function prepare(uri: string): Promise<string> {
+// Downscale + return base64: smaller payload + fewer image tokens (lower cost/latency).
+async function prepare(uri: string): Promise<{ uri: string; base64: string }> {
   const out = await manipulateAsync(uri, [{ resize: { width: 1500 } }], {
     compress: 0.7,
     format: SaveFormat.JPEG,
+    base64: true,
   });
-  return out.uri;
+  return { uri: out.uri, base64: out.base64 ?? "" };
 }
 
 export default function CaptureScreen({ settings, onParsed, onOpenSettings }: Props) {
   const [busy, setBusy] = useState(false);
 
-  const needsSettings = !settings.baseUrl || !settings.apiKey;
+  const needsSettings = !isConfigured(settings);
 
   async function run(pick: () => Promise<ImagePicker.ImagePickerResult>, askPerm: () => Promise<ImagePicker.PermissionResponse>) {
     if (needsSettings) {
@@ -47,8 +49,8 @@ export default function CaptureScreen({ settings, onParsed, onOpenSettings }: Pr
 
     setBusy(true);
     try {
-      const uri = await prepare(result.assets[0].uri);
-      const receipt = await parseReceipt(settings, uri);
+      const { uri, base64 } = await prepare(result.assets[0].uri);
+      const receipt = await parseReceipt(settings, base64);
       onParsed(receipt, uri);
     } catch (e: any) {
       Alert.alert("Parsing failed", e?.message ?? String(e));
