@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Receipt to Fakturoid",
-    "slug": "app",
+    "slug": "receipt2fakturoid",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,12 +10,14 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "Take photos of receipts to extract their items.",
-        "NSPhotoLibraryUsageDescription": "Pick receipt photos to extract their items."
-      }
+        "NSPhotoLibraryUsageDescription": "Pick receipt photos to extract their items.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "cz.jakubpistek.receipt2fakturoid"
     },
     "android": {
-      "package": "cz.jakubpistek.receipttofakturoid",
-      "versionCode": 1,
+      "package": "cz.jakubpistek.receipt2fakturoid",
+      "versionCode": 3,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -36,6 +38,12 @@
           "photosPermission": "Pick receipt photos to extract their items."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "20764526-d112-4add-ad77-cf3a6422833a"
+      }
+    },
+    "owner": "thebiftek"
   }
 }
