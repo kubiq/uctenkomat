@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { checkOpenAiKey } from "../openai";
 import { checkFakturoid } from "../fakturoid";
 import { saveSettings } from "../storage";
+import { showAlert } from "../ui";
 import type { Settings } from "../types";
 
 type Props = {
@@ -32,12 +33,12 @@ export default function SettingsScreen({ initial, onSaved, onBack }: Props) {
       } catch {
         fakturoidOk = false;
       }
-      Alert.alert(
+      showAlert(
         "Connection test",
         `OpenAI: ${openaiOk ? "✓ ok" : "✗ failed"}\nFakturoid: ${fakturoidOk ? "✓ ok" : "✗ failed"}`,
       );
     } catch (e: any) {
-      Alert.alert("Test failed", e?.message ?? String(e));
+      showAlert("Test failed", e?.message ?? String(e));
     } finally {
       setTesting(false);
     }
@@ -52,7 +53,7 @@ export default function SettingsScreen({ initial, onSaved, onBack }: Props) {
     };
     const missing = Object.entries(trimmed).filter(([, v]) => !v).map(([k]) => k);
     if (missing.length) {
-      Alert.alert("Missing fields", `Please fill in: ${missing.join(", ")}`);
+      showAlert("Missing fields", `Please fill in: ${missing.join(", ")}`);
       return;
     }
     await saveSettings(trimmed);

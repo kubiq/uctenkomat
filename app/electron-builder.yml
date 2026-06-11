@@ -1,0 +1,22 @@
+appId: cz.jakubpistek.receipt2fakturoid
+productName: Receipt to Fakturoid
+# Override the package.json "main" (which Expo uses) for the packaged Electron app.
+extraMetadata:
+  main: electron/main.cjs
+directories:
+  output: electron-dist
+files:
+  - electron/**
+  - dist/**
+  - package.json
+linux:
+  target:
+    - AppImage
+  category: Office
+win:
+  target:
+    - nsis
+mac:
+  target:
+    - dmg
+  category: public.app-category.finance

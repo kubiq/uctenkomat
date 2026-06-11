@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { createExpense, searchSubjects } from "../fakturoid";
+import { showAlert } from "../ui";
 import type { CreatedExpense, Receipt, Settings, Subject } from "../types";
 
 type Props = {
@@ -64,7 +64,7 @@ export default function ReviewScreen({ settings, initial, onDone, onBack }: Prop
     try {
       setSubjects(await searchSubjects(settings, query));
     } catch (e: any) {
-      Alert.alert("Search failed", e?.message ?? String(e));
+      showAlert("Search failed", e?.message ?? String(e));
     } finally {
       setSearching(false);
     }
@@ -72,11 +72,11 @@ export default function ReviewScreen({ settings, initial, onDone, onBack }: Prop
 
   async function submit() {
     if (receipt.items.length === 0) {
-      Alert.alert("No items", "Add at least one line item.");
+      showAlert("No items", "Add at least one line item.");
       return;
     }
     if (!override && !ico) {
-      Alert.alert(
+      showAlert(
         "No supplier",
         "No IČO was extracted, so the supplier can't be auto-matched. Pick a supplier manually.",
       );
@@ -89,7 +89,7 @@ export default function ReviewScreen({ settings, initial, onDone, onBack }: Prop
       const expense = await createExpense(settings, receipt, { subjectId: override?.id });
       onDone(expense);
     } catch (e: any) {
-      Alert.alert("Could not create expense", e?.message ?? String(e));
+      showAlert("Could not create expense", e?.message ?? String(e));
     } finally {
       setSubmitting(false);
     }

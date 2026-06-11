@@ -1,25 +1,28 @@
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import type { CreatedExpense } from "../types";
 
-type Props = { expense: CreatedExpense; onNew: () => void };
+type Props = { count: number; expense: CreatedExpense | null; onNew: () => void };
 
-export default function SuccessScreen({ expense, onNew }: Props) {
+export default function SuccessScreen({ count, expense, onNew }: Props) {
+  const multiple = count > 1;
   return (
     <View style={styles.container}>
       <Text style={styles.check}>✓</Text>
-      <Text style={styles.title}>Expense created</Text>
-      <Text style={styles.muted}>
-        #{expense.id}
-        {expense.number ? ` · ${expense.number}` : ""}
-      </Text>
+      <Text style={styles.title}>{multiple ? `${count} expenses created` : "Expense created"}</Text>
+      {!multiple && expense && (
+        <Text style={styles.muted}>
+          #{expense.id}
+          {expense.number ? ` · ${expense.number}` : ""}
+        </Text>
+      )}
 
-      {expense.url && (
+      {!multiple && expense?.url && (
         <Pressable style={styles.link} onPress={() => Linking.openURL(expense.url!)}>
           <Text style={styles.linkText}>Open in Fakturoid</Text>
         </Pressable>
       )}
       <Pressable style={styles.primary} onPress={onNew}>
-        <Text style={styles.primaryText}>Scan another receipt</Text>
+        <Text style={styles.primaryText}>Scan more receipts</Text>
       </Pressable>
     </View>
   );

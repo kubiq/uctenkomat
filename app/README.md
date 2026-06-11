@@ -75,6 +75,30 @@ npx expo install --fix                  # align all packages to that SDK
 ```
 Re-run `npx expo start`. (Option A is cleaner long-term; B is the quick path.)
 
+## Desktop app (Electron)
+The same code ships as a Windows/Mac/Linux desktop app. Electron runs with Node underneath,
+so it calls the Fakturoid API **directly** — no CORS proxy needed (a browser/PWA would need
+one). On desktop, the camera button is hidden and the gallery button lets you select
+**multiple images at once**, each processed as its own receipt.
+
+```bash
+cd app
+npm install            # downloads the Electron binary via postinstall
+                       # (if your npm blocks install scripts: `node node_modules/electron/install.js`)
+
+# Run in dev (exports the web build, then launches Electron):
+npm run electron:dev
+
+# Build an installer into app/electron-dist/:
+npm run electron:build      # Linux → AppImage, Windows → .exe (NSIS), macOS → .dmg
+```
+Notes:
+- electron-builder packages for the **OS you run it on** — build Windows on Windows, macOS on
+  macOS (or use CI). Linux builds the AppImage.
+- The desktop window loads only the app's own local bundle; `webSecurity` is disabled solely so
+  the renderer can reach the Fakturoid API. Keys are stored in `localStorage`.
+
 ## Notes
-- Native camera needs a real device (or emulator) — the web target won't capture photos.
-- The app stores Server URL + API key in `expo-secure-store`.
+- Native (mobile) camera needs a real device or emulator — the web/desktop target uses file
+  selection instead.
+- Keys are stored in `expo-secure-store` on mobile, `localStorage` on web/desktop.

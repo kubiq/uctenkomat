@@ -16,6 +16,9 @@ app/.expo/
 app/dist/
 app/web-build/
 
+# electron build output
+app/electron-dist/
+
 # misc
 *.log
 .DS_Store
