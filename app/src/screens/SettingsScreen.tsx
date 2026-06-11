@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { checkOpenAiKey } from "../openai";
 import { PROVIDERS, getProvider, providerCreds } from "../accounting";
 import { saveSettings } from "../storage";
@@ -79,7 +79,8 @@ export default function SettingsScreen({ initial, onChange, onClose }: Props) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 48 }}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 200 }} keyboardShouldPersistTaps="handled">
       <View style={styles.headerRow}>
         <Pressable onPress={close} hitSlop={12}>
           <Text style={styles.back}>‹ Back</Text>
@@ -121,6 +122,7 @@ export default function SettingsScreen({ initial, onChange, onClose }: Props) {
       </Pressable>
       <Text style={styles.savedNote}>Changes are saved automatically.</Text>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -98,7 +100,8 @@ export default function ReviewScreen({ settings, initial, onDone, onBack }: Prop
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 48 }}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 200 }} keyboardShouldPersistTaps="handled">
       <View style={styles.headerRow}>
         <Pressable onPress={onBack} hitSlop={12}>
           <Text style={styles.back}>‹ Back</Text>
@@ -204,6 +207,7 @@ export default function ReviewScreen({ settings, initial, onDone, onBack }: Prop
         {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Create expense in {provider.label}</Text>}
       </Pressable>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
