@@ -40,6 +40,17 @@ never leave your device.
 </p>
 <p align="center"><em>Capture &nbsp;·&nbsp; Review (per-line VAT, supplier auto-matched by IČO) &nbsp;·&nbsp; Settings (BYOK)</em></p>
 
+## Install (Android)
+Not on the Play Store — install the APK directly:
+
+1. Download the latest `.apk` from the [**Releases**](https://github.com/kubiq/receipt-to-fakturoid-app/releases/latest) page on your phone.
+2. Open it; when Android asks, allow **installing unknown apps** for your browser/files app.
+3. Open the app → **Settings** → enter your OpenAI key and Fakturoid Client ID / Secret / slug.
+
+**Stay updated automatically** with [Obtainium](https://github.com/ImranR98/Obtainium): install
+Obtainium, *Add App*, paste `https://github.com/kubiq/receipt-to-fakturoid-app`, and it will
+install/update this app straight from GitHub Releases — no app store needed.
+
 ## How it works
 The app talks directly to OpenAI and Fakturoid — there is no server in between.
 
