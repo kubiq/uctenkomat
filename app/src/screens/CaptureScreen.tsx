@@ -1,6 +1,6 @@
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { isConfigured } from "../storage";
+import { isConfigured } from "../accounting";
 import { showAlert } from "../ui";
 import type { Settings } from "../types";
 

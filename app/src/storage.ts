@@ -2,18 +2,13 @@ import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import type { Settings } from "./types";
 
-// SecureStore keys must be alphanumeric/._- ; map each setting field to one.
-const KEYS: Record<keyof Settings, string> = {
-  openaiApiKey: "openai_api_key",
-  fakturoidClientId: "fakturoid_client_id",
-  fakturoidClientSecret: "fakturoid_client_secret",
-  fakturoidSlug: "fakturoid_slug",
-};
+const STORAGE_KEY = "settings_v2";
+const DEFAULTS: Settings = { openaiApiKey: "", provider: "fakturoid", creds: {} };
 
 const isWeb = Platform.OS === "web";
 
-// On desktop (Electron) a preload bridge persists settings to a JSON file —
-// reliable across restarts, unlike custom-scheme localStorage.
+// On desktop (Electron) a preload bridge persists to a JSON file; on web,
+// localStorage; on native, expo-secure-store.
 type DesktopStore = { get(k: string): Promise<string | null>; set(k: string, v: string): Promise<unknown> };
 const desktopStore: DesktopStore | undefined = (globalThis as any).desktopStore;
 
@@ -36,20 +31,16 @@ async function setItem(key: string, value: string): Promise<void> {
 }
 
 export async function loadSettings(): Promise<Settings> {
-  const entries = await Promise.all(
-    (Object.keys(KEYS) as (keyof Settings)[]).map(
-      async (k) => [k, (await getItem(KEYS[k])) ?? ""] as const,
-    ),
-  );
-  return Object.fromEntries(entries) as Settings;
+  const raw = await getItem(STORAGE_KEY);
+  if (!raw) return { ...DEFAULTS };
+  try {
+    const parsed = JSON.parse(raw);
+    return { ...DEFAULTS, ...parsed, creds: { ...DEFAULTS.creds, ...(parsed.creds ?? {}) } };
+  } catch {
+    return { ...DEFAULTS };
+  }
 }
 
 export async function saveSettings(s: Settings): Promise<void> {
-  await Promise.all(
-    (Object.keys(KEYS) as (keyof Settings)[]).map((k) => setItem(KEYS[k], (s[k] ?? "").trim())),
-  );
-}
-
-export function isConfigured(s: Settings): boolean {
-  return Boolean(s.openaiApiKey && s.fakturoidClientId && s.fakturoidClientSecret && s.fakturoidSlug);
+  await setItem(STORAGE_KEY, JSON.stringify(s));
 }

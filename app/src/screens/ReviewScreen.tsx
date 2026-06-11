@@ -8,7 +8,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { createExpense, searchSubjects } from "../fakturoid";
+import { getProvider, providerCreds } from "../accounting";
 import { showAlert } from "../ui";
 import type { CreatedExpense, Receipt, Settings, Subject } from "../types";
 
@@ -51,6 +51,8 @@ export default function ReviewScreen({ settings, initial, onDone, onBack }: Prop
     receipt.vat_summary.length > 0 && receipt.total != null && Math.abs(recapTotal - receipt.total) > 0.05;
 
   const ico = (receipt.supplier_ico ?? "").replace(/\D/g, "");
+  const provider = getProvider(settings.provider);
+  const creds = providerCreds(settings);
 
   function updateItem(i: number, patch: Partial<Receipt["items"][number]>) {
     setReceipt((r) => ({ ...r, items: r.items.map((it, idx) => (idx === i ? { ...it, ...patch } : it)) }));
@@ -62,7 +64,7 @@ export default function ReviewScreen({ settings, initial, onDone, onBack }: Prop
   async function doSearch() {
     setSearching(true);
     try {
-      setSubjects(await searchSubjects(settings, query));
+      setSubjects(await provider.searchSubjects(creds, query));
     } catch (e: any) {
       showAlert("Search failed", e?.message ?? String(e));
     } finally {
@@ -86,7 +88,7 @@ export default function ReviewScreen({ settings, initial, onDone, onBack }: Prop
     setSubmitting(true);
     try {
       // Omit subjectId -> resolve by IČO; include it only when overriding.
-      const expense = await createExpense(settings, receipt, { subjectId: override?.id });
+      const expense = await provider.createExpense(creds, receipt, { subjectId: override?.id });
       onDone(expense);
     } catch (e: any) {
       showAlert("Could not create expense", e?.message ?? String(e));
@@ -199,7 +201,7 @@ export default function ReviewScreen({ settings, initial, onDone, onBack }: Prop
       )}
 
       <Pressable style={styles.submit} onPress={submit} disabled={submitting}>
-        {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Create expense in Fakturoid</Text>}
+        {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Create expense in {provider.label}</Text>}
       </Pressable>
     </ScrollView>
   );

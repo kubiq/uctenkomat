@@ -1,10 +1,10 @@
-import type { CreatedExpense, Receipt, Settings, Subject } from "./types";
+import type { CreatedExpense, Receipt, Subject } from "../types";
+import type { AccountingProvider, Creds } from "./provider";
 
 // Hermes (RN 0.74+) provides btoa globally; declare it for TypeScript.
 declare const btoa: (data: string) => string;
 
 const API_BASE = "https://app.fakturoid.cz/api/v3";
-// Fakturoid requires a User-Agent with a contact. BYOK app uses a fixed identifier.
 const USER_AGENT = "ReceiptToFakturoid/1.0 (app)";
 
 const onlyDigits = (s: string | null | undefined) => (s ?? "").replace(/\D/g, "");
@@ -12,29 +12,27 @@ const onlyDigits = (s: string | null | undefined) => (s ?? "").replace(/\D/g, ""
 // --- token cache (per app session, keyed by client id) ---------------------
 let cached: { key: string; value: string; expiresAt: number } | null = null;
 
-async function getToken(s: Settings): Promise<string> {
-  const key = s.fakturoidClientId;
-  if (cached && cached.key === key && cached.expiresAt > Date.now() + 30_000) return cached.value;
-
+async function getToken(c: Creds): Promise<string> {
+  if (cached && cached.key === c.clientId && cached.expiresAt > Date.now() + 30_000) return cached.value;
   const res = await fetch(`${API_BASE}/oauth/token`, {
     method: "POST",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
       "User-Agent": USER_AGENT,
-      Authorization: "Basic " + btoa(`${s.fakturoidClientId}:${s.fakturoidClientSecret}`),
+      Authorization: "Basic " + btoa(`${c.clientId}:${c.clientSecret}`),
     },
     body: JSON.stringify({ grant_type: "client_credentials" }),
   });
   if (!res.ok) throw new Error(`Fakturoid auth failed (${res.status}): ${await res.text()}`);
   const json = await res.json();
-  cached = { key, value: json.access_token, expiresAt: Date.now() + (json.expires_in ?? 7200) * 1000 };
+  cached = { key: c.clientId, value: json.access_token, expiresAt: Date.now() + (json.expires_in ?? 7200) * 1000 };
   return cached.value;
 }
 
-async function api(s: Settings, method: string, path: string, body?: unknown): Promise<any> {
-  const token = await getToken(s);
-  const res = await fetch(`${API_BASE}/accounts/${s.fakturoidSlug}${path}`, {
+async function api(c: Creds, method: string, path: string, body?: unknown): Promise<any> {
+  const token = await getToken(c);
+  const res = await fetch(`${API_BASE}/accounts/${c.slug}${path}`, {
     method,
     headers: {
       Accept: "application/json",
@@ -48,14 +46,8 @@ async function api(s: Settings, method: string, path: string, body?: unknown): P
   return res.json();
 }
 
-/** Validate Fakturoid credentials cheaply (used by Settings "test"). */
-export async function checkFakturoid(s: Settings): Promise<boolean> {
-  await getToken(s);
-  return true;
-}
-
-export async function searchSubjects(s: Settings, query: string): Promise<Subject[]> {
-  const list = await api(s, "GET", `/subjects/search.json?query=${encodeURIComponent(query || "")}`);
+async function searchSubjects(c: Creds, query: string): Promise<Subject[]> {
+  const list = await api(c, "GET", `/subjects/search.json?query=${encodeURIComponent(query || "")}`);
   return (list || []).map((x: any) => ({
     id: x.id,
     name: x.name,
@@ -64,47 +56,34 @@ export async function searchSubjects(s: Settings, query: string): Promise<Subjec
   }));
 }
 
-async function createSubject(s: Settings, name: string, ico: string, dic: string | null): Promise<Subject> {
-  return api(s, "POST", "/subjects.json", {
-    name,
-    registration_no: ico || undefined,
-    vat_no: dic || undefined,
-    type: "supplier",
-    country: "CZ",
-  });
-}
-
-/** Resolve a subject by IČO (create if missing); name-search fallback if no IČO. */
-export async function findOrCreateSubjectByIco(
-  s: Settings,
+async function findOrCreateSubjectByIco(
+  c: Creds,
   supplier: { ico: string | null; dic: string | null; name: string | null },
 ): Promise<{ id: number; name: string; matchedBy: string; created: boolean }> {
   const icoDigits = onlyDigits(supplier.ico);
   if (icoDigits) {
-    const hit = (await searchSubjects(s, icoDigits)).find((x) => onlyDigits(x.registration_no) === icoDigits);
+    const hit = (await searchSubjects(c, icoDigits)).find((x) => onlyDigits(x.registration_no) === icoDigits);
     if (hit) return { id: hit.id, name: hit.name, matchedBy: "ico", created: false };
   } else if (supplier.name) {
-    const first = (await searchSubjects(s, supplier.name))[0];
+    const first = (await searchSubjects(c, supplier.name))[0];
     if (first) return { id: first.id, name: first.name, matchedBy: "name", created: false };
   }
   const name = supplier.name || (icoDigits ? `Supplier ${icoDigits}` : "");
   if (!name) throw new Error("Cannot resolve supplier: no IČO match and no name to create one.");
-  const created = await createSubject(s, name, icoDigits, supplier.dic);
+  const created = await api(c, "POST", "/subjects.json", {
+    name,
+    registration_no: icoDigits || undefined,
+    vat_no: supplier.dic || undefined,
+    type: "supplier",
+    country: "CZ",
+  });
   return { id: created.id, name: created.name, matchedBy: "created", created: true };
 }
 
-/**
- * Create the expense. Lines use each item's own VAT rate and the printed
- * quantity/unit price (vat_price_mode from_total_with_vat treats them as gross).
- */
-export async function createExpense(
-  s: Settings,
-  receipt: Receipt,
-  opts: { subjectId?: number } = {},
-): Promise<CreatedExpense> {
+async function createExpense(c: Creds, receipt: Receipt, opts: { subjectId?: number }): Promise<CreatedExpense> {
   const subject = opts.subjectId
-    ? { id: opts.subjectId, name: undefined, matchedBy: "explicit", created: false }
-    : await findOrCreateSubjectByIco(s, {
+    ? { id: opts.subjectId, name: undefined as string | undefined, matchedBy: "explicit", created: false }
+    : await findOrCreateSubjectByIco(c, {
         ico: receipt.supplier_ico,
         dic: receipt.supplier_dic,
         name: receipt.supplier_name || receipt.merchant,
@@ -123,11 +102,28 @@ export async function createExpense(
     })),
   };
 
-  const expense = await api(s, "POST", "/expenses.json", payload);
+  const expense = await api(c, "POST", "/expenses.json", payload);
   return {
     id: expense.id,
     number: expense.number ?? null,
-    url: `https://app.fakturoid.cz/${s.fakturoidSlug}/expenses/${expense.id}`,
+    url: `https://app.fakturoid.cz/${c.slug}/expenses/${expense.id}`,
     subject: { id: subject.id, name: subject.name, matchedBy: subject.matchedBy, created: subject.created },
   };
 }
+
+export const fakturoidProvider: AccountingProvider = {
+  id: "fakturoid",
+  label: "Fakturoid",
+  setupHint: "Create an app in Fakturoid → Nastavení → API / Propojení aplikací (Client Credentials).",
+  credentialFields: [
+    { key: "clientId", label: "Client ID" },
+    { key: "clientSecret", label: "Client secret", secret: true },
+    { key: "slug", label: "Account slug", placeholder: "from app.fakturoid.cz/<slug>/…" },
+  ],
+  check: async (c) => {
+    await getToken(c);
+    return true;
+  },
+  searchSubjects,
+  createExpense,
+};

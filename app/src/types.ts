@@ -38,10 +38,12 @@ export type CreatedExpense = {
   subject?: { id: number; name?: string; matchedBy?: string; created?: boolean };
 };
 
-// BYOK config — each user supplies their own keys, stored in expo-secure-store.
+export type ProviderId = "fakturoid" | "idoklad";
+
+// BYOK config. OpenAI key is provider-independent; each accounting provider has
+// its own credentials, stored namespaced as `${providerId}.${fieldKey}`.
 export type Settings = {
   openaiApiKey: string;
-  fakturoidClientId: string;
-  fakturoidClientSecret: string;
-  fakturoidSlug: string; // account slug from the Fakturoid URL
+  provider: ProviderId;
+  creds: Record<string, string>;
 };

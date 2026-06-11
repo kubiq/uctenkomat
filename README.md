@@ -1,12 +1,13 @@
 # Receipt to Fakturoid
 
 Snap a photo of a Czech store receipt (**účtenka**) and turn it into an expense
-(**náklad**) in [Fakturoid](https://www.fakturoid.cz) — right from your phone. A vision LLM
-reads the receipt into structured data (items, prices, per-line VAT, supplier IČO/DIČ), you
-review and edit, and the app files it in Fakturoid.
+(**náklad**) in [Fakturoid](https://www.fakturoid.cz) or [iDoklad](https://www.idoklad.cz) —
+right from your phone or desktop. A vision LLM reads the receipt into structured data (items,
+prices, per-line VAT, supplier IČO/DIČ), you review and edit, and the app files it in your
+chosen accounting service.
 
-No backend, no accounts to trust — you bring your own OpenAI and Fakturoid keys, and they
-never leave your device.
+No backend, no accounts to trust — you bring your own OpenAI key and your accounting
+provider's API credentials, and they never leave your device.
 
 ```
 ┌─────────────┐   your OpenAI key    ┌──────────┐
@@ -76,9 +77,10 @@ The app talks directly to OpenAI and Fakturoid — there is no server in between
 
 ## Requirements
 - An **OpenAI API key** — <https://platform.openai.com> (vision-capable, e.g. `gpt-4o`).
-- A **Fakturoid** account and an **API app** (Client Credentials):
-  *Nastavení → API / Propojení aplikací → Nová aplikace*. You'll get a **Client ID** and
-  **Client Secret**; your **account slug** is the part in `https://app.fakturoid.cz/<slug>/…`.
+- An accounting account with API credentials — pick one in **Settings**:
+  - **Fakturoid**: *Nastavení → API / Propojení aplikací → Nová aplikace* → **Client ID** +
+    **Client Secret**; the **account slug** is the part in `https://app.fakturoid.cz/<slug>/…`.
+  - **iDoklad**: *Nastavení → API* → **Client ID** + **Client Secret** (Client Credentials).
 - For development: [Node.js](https://nodejs.org) + [Expo](https://expo.dev) and the **Expo
   Go** app (SDK 54) on an Android phone.
 
