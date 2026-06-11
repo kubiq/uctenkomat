@@ -52,10 +52,15 @@ Auto-update with [Obtainium](https://github.com/ImranR98/Obtainium): *Add App* �
 `https://github.com/kubiq/receipt-to-fakturoid-app` — installs/updates from GitHub Releases,
 no app store.
 
-**Desktop — Linux** (Windows/macOS: build from source, see below):
-1. Download the `.AppImage`.
-2. `chmod +x Receipt-to-Fakturoid-*.AppImage` and run it.
-3. Open **Settings** and enter your keys (stored encrypted via the OS keyring).
+**Desktop** (keys are stored encrypted via the OS keyring):
+- **Linux** — download the `.AppImage`, then `chmod +x Receipt-to-Fakturoid-*.AppImage` and run it.
+- **Windows** — download and run the `.exe` installer.
+- **macOS** — download the `.dmg` (Apple Silicon / arm64) and drag the app to Applications.
+
+> **Unsigned app — how to open.** The desktop builds aren't code-signed (no paid
+> Apple/Microsoft certificates), so the OS warns on first launch. It's safe to open:
+> - **Windows** — at the "Windows protected your PC" SmartScreen prompt, click **More info → Run anyway**.
+> - **macOS** — **right-click the app → Open**, then **Open** again in the dialog (don't double-click the first time). Or allow it under *System Settings → Privacy & Security*.
 
 > iPhone isn't supported — Apple requires signing/$99-a-year, and a browser PWA would need a
 > CORS proxy for Fakturoid. The desktop app (which uses Node under the hood) avoids that.
