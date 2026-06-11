@@ -2,13 +2,14 @@ import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { getProvider, providerCreds } from "../accounting";
-import { KbScroll } from "../components/KbScroll";
+import { useKeyboardHeight } from "../keyboard";
 import { showAlert } from "../ui";
 import type { CreatedExpense, Receipt, Settings, Subject } from "../types";
 
@@ -53,6 +54,7 @@ export default function ReviewScreen({ settings, initial, onDone, onBack }: Prop
   const ico = (receipt.supplier_ico ?? "").replace(/\D/g, "");
   const provider = getProvider(settings.provider);
   const creds = providerCreds(settings);
+  const kb = useKeyboardHeight();
 
   function updateItem(i: number, patch: Partial<Receipt["items"][number]>) {
     setReceipt((r) => ({ ...r, items: r.items.map((it, idx) => (idx === i ? { ...it, ...patch } : it)) }));
@@ -98,7 +100,7 @@ export default function ReviewScreen({ settings, initial, onDone, onBack }: Prop
   }
 
   return (
-    <KbScroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 + kb }} keyboardShouldPersistTaps="handled">
       <View style={styles.headerRow}>
         <Pressable onPress={onBack} hitSlop={12}>
           <Text style={styles.back}>‹ Back</Text>
@@ -203,7 +205,7 @@ export default function ReviewScreen({ settings, initial, onDone, onBack }: Prop
       <Pressable style={styles.submit} onPress={submit} disabled={submitting}>
         {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Create expense in {provider.label}</Text>}
       </Pressable>
-    </KbScroll>
+    </ScrollView>
   );
 }
 

@@ -10,7 +10,6 @@ import CaptureScreen from "./src/screens/CaptureScreen";
 import ReviewScreen from "./src/screens/ReviewScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import SuccessScreen from "./src/screens/SuccessScreen";
-import { KbProvider } from "./src/components/KbProvider";
 
 type Screen = "capture" | "busy" | "review" | "settings" | "done";
 
@@ -77,7 +76,6 @@ export default function App() {
   }
 
   return (
-    <KbProvider>
     <View style={styles.shell}>
       <StatusBar style="dark" />
       <View style={styles.card}>
@@ -126,7 +124,6 @@ export default function App() {
       )}
       </View>
     </View>
-    </KbProvider>
   );
 }
 
