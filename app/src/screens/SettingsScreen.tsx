@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { checkOpenAiKey } from "../openai";
 import { PROVIDERS, getProvider, providerCreds } from "../accounting";
 import { saveSettings } from "../storage";
-import { useKeyboardHeight } from "../keyboard";
+import { KbScroll } from "../components/KbScroll";
 import { showAlert } from "../ui";
 import type { ProviderId, Settings } from "../types";
 
@@ -28,7 +28,6 @@ export default function SettingsScreen({ initial, onChange, onClose }: Props) {
   const mounted = useRef(false);
 
   const provider = getProvider(s.provider);
-  const kb = useKeyboardHeight();
 
   function persist(next: Settings) {
     const t = trimmed(next);
@@ -81,7 +80,7 @@ export default function SettingsScreen({ initial, onChange, onClose }: Props) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 + kb }} keyboardShouldPersistTaps="handled">
+    <KbScroll style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
       <View style={styles.headerRow}>
         <Pressable onPress={close} hitSlop={12}>
           <Text style={styles.back}>‹ Back</Text>
@@ -122,7 +121,7 @@ export default function SettingsScreen({ initial, onChange, onClose }: Props) {
         <Text style={styles.secondaryText}>{testing ? "Testing…" : "Test connection"}</Text>
       </Pressable>
       <Text style={styles.savedNote}>Changes are saved automatically.</Text>
-    </ScrollView>
+    </KbScroll>
   );
 }
 
