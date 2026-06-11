@@ -1,0 +1,4 @@
+#!/bin/sh
+# Keep package.json version in sync with app.json on every commit.
+node app/scripts/sync-version.mjs || exit 1
+git add app/package.json

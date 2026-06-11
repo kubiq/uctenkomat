@@ -31,7 +31,10 @@
     "web:export": "expo export -p web",
     "electron": "electron electron/main.cjs",
     "electron:dev": "expo export -p web && electron electron/main.cjs",
-    "electron:build": "expo export -p web && electron-builder"
+    "electron:build": "expo export -p web && electron-builder",
+    "bump": "node scripts/bump.mjs",
+    "sync-version": "node scripts/sync-version.mjs",
+    "prepare": "git config core.hooksPath app/.husky || true"
   },
   "private": true
 }
