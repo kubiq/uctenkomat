@@ -30,6 +30,16 @@ never leave your device.
 - 🔐 **Bring your own keys (BYOK)**: keys live only in your device's secure storage.
 - 💸 **~$0.01 per receipt** in OpenAI usage.
 
+## Screenshots
+<p align="center">
+  <img src="docs/screenshots/capture.jpg" width="240" alt="Capture screen" />
+  &nbsp;
+  <img src="docs/screenshots/review.jpg" width="240" alt="Review: items, per-line VAT, supplier auto-matched by IČO" />
+  &nbsp;
+  <img src="docs/screenshots/settings.jpg" width="240" alt="Settings: bring your own keys" />
+</p>
+<p align="center"><em>Capture &nbsp;·&nbsp; Review (per-line VAT, supplier auto-matched by IČO) &nbsp;·&nbsp; Settings (BYOK)</em></p>
+
 ## How it works
 The app talks directly to OpenAI and Fakturoid — there is no server in between.
 
