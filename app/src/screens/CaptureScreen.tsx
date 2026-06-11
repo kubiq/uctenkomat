@@ -48,7 +48,7 @@ export default function CaptureScreen({ settings, onSelected, onOpenSettings }: 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Receipt → Fakturoid</Text>
+        <Text style={styles.title}>Účtenkomat</Text>
         <Pressable onPress={onOpenSettings} hitSlop={12}>
           <Text style={styles.gear}>⚙︎</Text>
         </Pressable>

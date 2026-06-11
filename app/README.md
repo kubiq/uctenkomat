@@ -1,4 +1,4 @@
-# Receipt → Fakturoid (Expo app)
+# Účtenkomat (Expo app)
 
 Mobile frontend: photograph a receipt → the backend parses it → review/edit → create a
 náklad in Fakturoid. See the repo root `README.md` for the backend.

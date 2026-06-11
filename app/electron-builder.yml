@@ -1,6 +1,6 @@
 appId: cz.jakubpistek.receipt2fakturoid
-productName: Receipt to Fakturoid
-artifactName: Receipt-to-Fakturoid-${version}-${arch}.${ext}
+productName: Účtenkomat
+artifactName: Uctenkomat-${version}-${arch}.${ext}
 # Override the package.json "main" (which Expo uses) for the packaged Electron app.
 extraMetadata:
   main: electron/main.cjs

@@ -88,7 +88,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 460,
     height: 860,
-    title: "Receipt to Fakturoid",
+    title: "Účtenkomat",
     webPreferences: {
       webSecurity: false, // allow direct calls to the Fakturoid API (no CORS)
       contextIsolation: true,

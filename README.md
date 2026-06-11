@@ -1,4 +1,4 @@
-# Receipt to Fakturoid
+# Účtenkomat
 
 Snap a photo of a Czech store receipt (**účtenka**) and turn it into an expense
 (**náklad**) in [Fakturoid](https://www.fakturoid.cz) or [iDoklad](https://www.idoklad.cz) —
@@ -42,7 +42,7 @@ provider's API credentials, and they never leave your device.
 <p align="center"><em>Capture &nbsp;·&nbsp; Review (per-line VAT, supplier auto-matched by IČO) &nbsp;·&nbsp; Settings (BYOK)</em></p>
 
 ## Install
-Grab the latest build from the [**Releases**](https://github.com/kubiq/receipt-to-fakturoid-app/releases/latest) page.
+Grab the latest build from the [**Releases**](https://github.com/kubiq/uctenkomat/releases/latest) page.
 
 **Android** (not on the Play Store — sideload the APK):
 1. Download the `.apk` on your phone.
@@ -50,11 +50,11 @@ Grab the latest build from the [**Releases**](https://github.com/kubiq/receipt-t
 3. Open the app → **Settings** → enter your OpenAI key and Fakturoid Client ID / Secret / slug.
 
 Auto-update with [Obtainium](https://github.com/ImranR98/Obtainium): *Add App* →
-`https://github.com/kubiq/receipt-to-fakturoid-app` — installs/updates from GitHub Releases,
+`https://github.com/kubiq/uctenkomat` — installs/updates from GitHub Releases,
 no app store.
 
 **Desktop** (keys are stored encrypted via the OS keyring):
-- **Linux** — download the `.AppImage`, then `chmod +x Receipt-to-Fakturoid-*.AppImage` and run it.
+- **Linux** — download the `.AppImage`, then `chmod +x Uctenkomat-*.AppImage` and run it.
 - **Windows** — download and run the `.exe` installer.
 - **macOS** — download the `.dmg` (Apple Silicon / arm64) and drag the app to Applications.
 
@@ -67,12 +67,12 @@ no app store.
 > CORS proxy for Fakturoid. The desktop app (which uses Node under the hood) avoids that.
 
 ## How it works
-The app talks directly to OpenAI and Fakturoid — there is no server in between.
+The app talks directly to OpenAI and your accounting service — there is no server in between.
 
 - `app/src/openai.ts` — sends the downscaled photo to OpenAI with **Structured Outputs**
   and a receipt JSON schema (`app/src/receipt.ts`).
-- `app/src/fakturoid.ts` — Fakturoid v3 client: OAuth token, search/create supplier by
-  IČO, create expense (per-line VAT, `vat_price_mode: from_total_with_vat`).
+- `app/src/accounting/` — pluggable provider interface with `fakturoid.ts` and `idoklad.ts`
+  (OAuth token, search/create supplier by IČO, create expense with per-line VAT).
 - `app/src/screens/` — Capture, Review (edit + VAT reconciliation), Settings, Success.
 
 ## Requirements
@@ -86,8 +86,8 @@ The app talks directly to OpenAI and Fakturoid — there is no server in between
 
 ## Getting started (development)
 ```bash
-git clone https://github.com/kubiq/receipt-to-fakturoid-app.git
-cd receipt-to-fakturoid-app/app
+git clone https://github.com/kubiq/uctenkomat.git
+cd uctenkomat/app
 npm install
 npx expo start          # open in Expo Go on your phone
 ```
@@ -136,7 +136,7 @@ backend — where users authorize via **Fakturoid OAuth redirect** and tokens ar
 server-side — would be the better model than each user pasting a client secret.
 
 ## Disclaimer
-Not affiliated with Fakturoid or OpenAI. Provided as-is; you are responsible for the
+Not affiliated with Fakturoid, iDoklad, or OpenAI. Provided as-is; you are responsible for the
 accuracy of the accounting data it produces. Always verify amounts and VAT before filing.
 
 ## License
