@@ -1,4 +1,5 @@
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import { isConfigured } from "../accounting";
 import { showAlert } from "../ui";
@@ -17,7 +18,7 @@ export default function CaptureScreen({ settings, onSelected, onOpenSettings }: 
 
   function guard(): boolean {
     if (needsSettings) {
-      showAlert("Setup needed", "Set your OpenAI and Fakturoid keys in Settings first.");
+      showAlert("Setup needed", "Set your OpenAI and Fakturoid/iDoklad keys in Settings first.");
       return false;
     }
     return true;
@@ -40,13 +41,13 @@ export default function CaptureScreen({ settings, onSelected, onOpenSettings }: 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       quality: 1,
-      allowsMultipleSelection: isWeb, // desktop/web: pick several receipts at once
+      allowsMultipleSelection: isWeb,
     });
     if (!result.canceled && result.assets?.length) onSelected(result.assets.map((a) => a.uri));
   }
 
   return (
-    <View style={styles.container}>
+    <LinearGradient colors={["#3b82f6", "#1d4ed8"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Účtenkomat</Text>
         <Pressable onPress={onOpenSettings} hitSlop={12}>
@@ -68,20 +69,20 @@ export default function CaptureScreen({ settings, onSelected, onOpenSettings }: 
         {isWeb && <Text style={styles.muted}>You can select multiple images — each is processed as its own receipt.</Text>}
         {needsSettings && <Text style={styles.warn}>Set your keys in Settings ⚙︎</Text>}
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 60, backgroundColor: "#fff" },
+  container: { flex: 1, padding: 20, paddingTop: 60 },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  title: { fontSize: 22, fontWeight: "700" },
-  gear: { fontSize: 24 },
+  title: { fontSize: 24, fontWeight: "800", color: "#fff" },
+  gear: { fontSize: 24, color: "#fff" },
   center: { flex: 1, justifyContent: "center", alignItems: "center", gap: 16 },
-  primary: { backgroundColor: "#2563eb", paddingVertical: 16, paddingHorizontal: 40, borderRadius: 12 },
-  primaryText: { color: "#fff", fontSize: 18, fontWeight: "600" },
-  secondary: { paddingVertical: 14, paddingHorizontal: 40, borderRadius: 12, borderWidth: 1, borderColor: "#cbd5e1" },
-  secondaryText: { color: "#334155", fontSize: 16, fontWeight: "500" },
-  muted: { color: "#64748b", textAlign: "center", maxWidth: 360 },
-  warn: { color: "#b45309", marginTop: 8 },
+  primary: { backgroundColor: "#fff", paddingVertical: 16, paddingHorizontal: 40, borderRadius: 12, shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  primaryText: { color: "#1d4ed8", fontSize: 18, fontWeight: "700" },
+  secondary: { paddingVertical: 14, paddingHorizontal: 40, borderRadius: 12, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.7)" },
+  secondaryText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  muted: { color: "rgba(255,255,255,0.85)", textAlign: "center", maxWidth: 360 },
+  warn: { color: "#fde68a", marginTop: 8, fontWeight: "600" },
 });
