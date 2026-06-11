@@ -6,25 +6,37 @@
 // webSecurity is disabled so the renderer can call the Fakturoid API directly
 // (Fakturoid sends no CORS headers); safe here because the window only loads
 // our own bundled, local content.
-const { app, BrowserWindow, protocol, ipcMain } = require("electron");
+const { app, BrowserWindow, protocol, ipcMain, safeStorage } = require("electron");
 const fs = require("fs");
 const path = require("path");
 
 const DIST = path.join(__dirname, "..", "dist");
 
-// --- persistent settings store (JSON file in userData) ---------------------
+// --- persistent settings store (encrypted JSON file in userData) -----------
+// Values are encrypted with the OS keyring via safeStorage when available,
+// falling back to plaintext if no keyring is present.
 function storeFile() {
   return path.join(app.getPath("userData"), "settings.json");
 }
 function readStore() {
   try {
-    return JSON.parse(fs.readFileSync(storeFile(), "utf8"));
+    const outer = JSON.parse(fs.readFileSync(storeFile(), "utf8"));
+    if (outer && outer.enc === true) {
+      return JSON.parse(safeStorage.decryptString(Buffer.from(outer.data, "base64")));
+    }
+    if (outer && outer.enc === false) return JSON.parse(outer.data);
+    // legacy plaintext format: flat { key: value }
+    return outer && typeof outer === "object" ? outer : {};
   } catch {
     return {};
   }
 }
 function writeStore(obj) {
-  fs.writeFileSync(storeFile(), JSON.stringify(obj));
+  const json = JSON.stringify(obj);
+  const outer = safeStorage.isEncryptionAvailable()
+    ? { enc: true, data: safeStorage.encryptString(json).toString("base64") }
+    : { enc: false, data: json };
+  fs.writeFileSync(storeFile(), JSON.stringify(outer));
 }
 ipcMain.handle("store:get", (_e, key) => readStore()[key] ?? null);
 ipcMain.handle("store:set", (_e, key, value) => {

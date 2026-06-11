@@ -40,16 +40,25 @@ never leave your device.
 </p>
 <p align="center"><em>Capture &nbsp;·&nbsp; Review (per-line VAT, supplier auto-matched by IČO) &nbsp;·&nbsp; Settings (BYOK)</em></p>
 
-## Install (Android)
-Not on the Play Store — install the APK directly:
+## Install
+Grab the latest build from the [**Releases**](https://github.com/kubiq/receipt-to-fakturoid-app/releases/latest) page.
 
-1. Download the latest `.apk` from the [**Releases**](https://github.com/kubiq/receipt-to-fakturoid-app/releases/latest) page on your phone.
-2. Open it; when Android asks, allow **installing unknown apps** for your browser/files app.
+**Android** (not on the Play Store — sideload the APK):
+1. Download the `.apk` on your phone.
+2. Open it; allow **installing unknown apps** when Android asks.
 3. Open the app → **Settings** → enter your OpenAI key and Fakturoid Client ID / Secret / slug.
 
-**Stay updated automatically** with [Obtainium](https://github.com/ImranR98/Obtainium): install
-Obtainium, *Add App*, paste `https://github.com/kubiq/receipt-to-fakturoid-app`, and it will
-install/update this app straight from GitHub Releases — no app store needed.
+Auto-update with [Obtainium](https://github.com/ImranR98/Obtainium): *Add App* →
+`https://github.com/kubiq/receipt-to-fakturoid-app` — installs/updates from GitHub Releases,
+no app store.
+
+**Desktop — Linux** (Windows/macOS: build from source, see below):
+1. Download the `.AppImage`.
+2. `chmod +x Receipt-to-Fakturoid-*.AppImage` and run it.
+3. Open **Settings** and enter your keys (stored encrypted via the OS keyring).
+
+> iPhone isn't supported — Apple requires signing/$99-a-year, and a browser PWA would need a
+> CORS proxy for Fakturoid. The desktop app (which uses Node under the hood) avoids that.
 
 ## How it works
 The app talks directly to OpenAI and Fakturoid — there is no server in between.

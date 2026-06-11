@@ -13,6 +13,7 @@ linux:
   target:
     - AppImage
   category: Office
+  icon: assets/icon.png
 win:
   target:
     - nsis
