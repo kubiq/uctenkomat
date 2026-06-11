@@ -10,13 +10,14 @@ No backend, no accounts to trust — you bring your own OpenAI key and your acco
 provider's API credentials, and they never leave your device.
 
 ```
-┌─────────────┐   your OpenAI key    ┌──────────┐
-│  Expo app   │ ───────────────────▶ │  OpenAI  │  photo → structured JSON
-│  (Android)  │                      └──────────┘
-│  capture →  │   your Fakturoid     ┌──────────┐
-│  review →   │ ───credentials─────▶ │ Fakturoid│  match supplier by IČO,
-│  confirm    │                      │   API v3 │  create the expense (náklad)
-└─────────────┘                      └──────────┘
+┌──────────────┐   your OpenAI key     ┌──────────┐
+│ Účtenkomat   │ ────────────────────▶ │  OpenAI  │  photo → structured JSON
+│ Android +    │                       └──────────┘
+│ desktop      │   your accounting     ┌──────────────────┐
+│ capture →    │ ───credentials──────▶ │ Fakturoid /      │  match supplier by IČO,
+│ review →     │                       │ iDoklad  API     │  create the expense (náklad)
+│ confirm      │                       └──────────────────┘
+└──────────────┘
 ```
 
 ## Features
@@ -119,21 +120,23 @@ Native changes (SDK bump, new native module, permissions, app version) still req
 build.
 
 ## Privacy & data
-- Your OpenAI and Fakturoid keys are stored only in **`expo-secure-store`** on the device;
-  they are never sent anywhere except directly to OpenAI and Fakturoid.
+- Your OpenAI and accounting keys are stored **only on your device** (secure-store on mobile,
+  an OS-keyring-encrypted file on desktop, localStorage on web); they are sent only directly to
+  OpenAI and your accounting provider.
 - Receipt **images are sent to OpenAI** for parsing (subject to OpenAI's API data policy).
-- Creating an expense writes a **real document** to your Fakturoid account.
+- Creating an expense writes a **real document** to your accounting account.
 - Extraction can make mistakes — **review every expense before filing**, especially VAT.
 
 ## Tech stack
-React Native · Expo (SDK 54) · TypeScript · OpenAI (vision + Structured Outputs) ·
-Fakturoid API v3 · EAS Build & Update.
+React Native · Expo (SDK 54) · TypeScript · Electron (desktop) · OpenAI (vision + Structured
+Outputs) · Fakturoid / iDoklad API · EAS Build & Update + GitHub Actions.
 
 ## Status & roadmap
 A personal/BYOK tool. A previous Node/Express backend was removed in favor of app-direct
-(still in git history). If this ever grows into a public, store-distributed app, a managed
-backend — where users authorize via **Fakturoid OAuth redirect** and tokens are held
-server-side — would be the better model than each user pasting a client secret.
+(still in git history). The accounting backend is pluggable (`app/src/accounting/`) — Fakturoid
+and iDoklad today. If this ever grows into a public, store-distributed app, a managed backend —
+where users authorize via OAuth redirect and tokens are held server-side — would be a better fit
+than each user pasting a client secret.
 
 ## Disclaimer
 Not affiliated with Fakturoid, iDoklad, or OpenAI. Provided as-is; you are responsible for the
