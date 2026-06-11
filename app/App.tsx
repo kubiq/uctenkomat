@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { loadSettings } from "./src/storage";
 import { prepareImageBase64 } from "./src/image";
@@ -76,9 +76,9 @@ export default function App() {
   }
 
   return (
-    <>
+    <View style={styles.shell}>
       <StatusBar style="dark" />
-
+      <View style={styles.card}>
       {screen === "capture" && (
         <CaptureScreen settings={settings} onSelected={startBatch} onOpenSettings={() => setScreen("settings")} />
       )}
@@ -125,6 +125,12 @@ export default function App() {
           }}
         />
       )}
-    </>
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  shell: { flex: 1, alignItems: "center", backgroundColor: "#e5e7eb" },
+  card: { flex: 1, width: "100%", maxWidth: 480, backgroundColor: "#fff" },
+});

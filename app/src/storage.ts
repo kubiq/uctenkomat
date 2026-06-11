@@ -12,15 +12,22 @@ const KEYS: Record<keyof Settings, string> = {
 
 const isWeb = Platform.OS === "web";
 
-// Web/Electron has no secure-store; fall back to localStorage (user's own machine).
+// On desktop (Electron) a preload bridge persists settings to a JSON file —
+// reliable across restarts, unlike custom-scheme localStorage.
+type DesktopStore = { get(k: string): Promise<string | null>; set(k: string, v: string): Promise<unknown> };
+const desktopStore: DesktopStore | undefined = (globalThis as any).desktopStore;
+
 async function getItem(key: string): Promise<string | null> {
-  if (isWeb) {
-    return typeof localStorage !== "undefined" ? localStorage.getItem(key) : null;
-  }
+  if (desktopStore) return desktopStore.get(key);
+  if (isWeb) return typeof localStorage !== "undefined" ? localStorage.getItem(key) : null;
   return SecureStore.getItemAsync(key);
 }
 
 async function setItem(key: string, value: string): Promise<void> {
+  if (desktopStore) {
+    await desktopStore.set(key, value);
+    return;
+  }
   if (isWeb) {
     if (typeof localStorage !== "undefined") localStorage.setItem(key, value);
     return;

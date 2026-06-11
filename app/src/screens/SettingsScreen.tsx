@@ -51,11 +51,8 @@ export default function SettingsScreen({ initial, onSaved, onBack }: Props) {
       fakturoidClientSecret: s.fakturoidClientSecret.trim(),
       fakturoidSlug: s.fakturoidSlug.trim().replace(/^https?:\/\/[^/]+\//, "").replace(/\/.*$/, ""),
     };
-    const missing = Object.entries(trimmed).filter(([, v]) => !v).map(([k]) => k);
-    if (missing.length) {
-      showAlert("Missing fields", `Please fill in: ${missing.join(", ")}`);
-      return;
-    }
+    // Partial saves are allowed — enter what you have now and finish later.
+    // (Scanning is gated on all keys being present, see isConfigured.)
     await saveSettings(trimmed);
     onSaved(trimmed);
   }

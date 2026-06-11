@@ -73,7 +73,7 @@ export default function CaptureScreen({ settings, onSelected, onOpenSettings }: 
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 60, backgroundColor: "#fff", maxWidth: 640, width: "100%", alignSelf: "center" },
+  container: { flex: 1, padding: 20, paddingTop: 60, backgroundColor: "#fff" },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   title: { fontSize: 22, fontWeight: "700" },
   gear: { fontSize: 24 },
