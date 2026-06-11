@@ -1,0 +1,59 @@
+name: Release desktop builds
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Existing release tag to attach the builds to"
+        required: true
+        default: "v1.0.0"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            pattern: "app/electron-dist/*.AppImage"
+          - os: windows-latest
+            pattern: "app/electron-dist/*.exe"
+          - os: macos-latest
+            pattern: "app/electron-dist/*.dmg"
+    runs-on: ${{ matrix.os }}
+    env:
+      # We don't code-sign; stop electron-builder from trying.
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      TAG: ${{ github.event.inputs.release_tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Export web build
+        working-directory: app
+        run: npx expo export -p web
+
+      - name: Build desktop installer
+        working-directory: app
+        run: npx electron-builder --publish never
+
+      - name: Upload to release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "$TAG" ${{ matrix.pattern }} --clobber --repo "${{ github.repository }}"
