@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { checkOpenAiKey } from "../openai";
 import { PROVIDERS, getProvider, providerCreds } from "../accounting";
@@ -8,15 +8,42 @@ import type { ProviderId, Settings } from "../types";
 
 type Props = {
   initial: Settings;
-  onSaved: (s: Settings) => void;
-  onBack: () => void;
+  onChange: (s: Settings) => void; // update app state (no navigation)
+  onClose: () => void;
 };
 
-export default function SettingsScreen({ initial, onSaved, onBack }: Props) {
+// Trim values when persisting (raw stays in the fields for smooth typing).
+function trimmed(s: Settings): Settings {
+  return {
+    openaiApiKey: s.openaiApiKey.trim(),
+    provider: s.provider,
+    creds: Object.fromEntries(Object.entries(s.creds).map(([k, v]) => [k, (v ?? "").trim()])),
+  };
+}
+
+export default function SettingsScreen({ initial, onChange, onClose }: Props) {
   const [s, setS] = useState<Settings>(initial);
   const [testing, setTesting] = useState(false);
+  const mounted = useRef(false);
 
   const provider = getProvider(s.provider);
+
+  function persist(next: Settings) {
+    const t = trimmed(next);
+    onChange(t);
+    saveSettings(t);
+  }
+
+  // Auto-save: debounce persistence whenever settings change.
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
+    const id = setTimeout(() => persist(s), 400);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s]);
 
   const setOpenAi = (v: string) => setS((p) => ({ ...p, openaiApiKey: v }));
   const setProvider = (id: ProviderId) => setS((p) => ({ ...p, provider: id }));
@@ -24,13 +51,19 @@ export default function SettingsScreen({ initial, onSaved, onBack }: Props) {
     setS((p) => ({ ...p, creds: { ...p.creds, [`${p.provider}.${fieldKey}`]: v } }));
   const credValue = (fieldKey: string) => s.creds[`${s.provider}.${fieldKey}`] ?? "";
 
+  function close() {
+    persist(s); // flush any pending debounce before leaving
+    onClose();
+  }
+
   async function test() {
     setTesting(true);
     try {
-      const openaiOk = s.openaiApiKey ? await checkOpenAiKey(s.openaiApiKey.trim()) : false;
+      const t = trimmed(s);
+      const openaiOk = t.openaiApiKey ? await checkOpenAiKey(t.openaiApiKey) : false;
       let providerOk = false;
       try {
-        providerOk = await provider.check(providerCreds(s));
+        providerOk = await provider.check(providerCreds(t));
       } catch {
         providerOk = false;
       }
@@ -45,21 +78,10 @@ export default function SettingsScreen({ initial, onSaved, onBack }: Props) {
     }
   }
 
-  async function save() {
-    // Partial saves are allowed — enter what you have now and finish later.
-    const trimmed: Settings = {
-      openaiApiKey: s.openaiApiKey.trim(),
-      provider: s.provider,
-      creds: Object.fromEntries(Object.entries(s.creds).map(([k, v]) => [k, (v ?? "").trim()])),
-    };
-    await saveSettings(trimmed);
-    onSaved(trimmed);
-  }
-
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 48 }}>
       <View style={styles.headerRow}>
-        <Pressable onPress={onBack} hitSlop={12}>
+        <Pressable onPress={close} hitSlop={12}>
           <Text style={styles.back}>‹ Back</Text>
         </Pressable>
         <Text style={styles.title}>Settings</Text>
@@ -97,9 +119,7 @@ export default function SettingsScreen({ initial, onSaved, onBack }: Props) {
       <Pressable style={styles.secondary} onPress={test} disabled={testing}>
         <Text style={styles.secondaryText}>{testing ? "Testing…" : "Test connection"}</Text>
       </Pressable>
-      <Pressable style={styles.primary} onPress={save}>
-        <Text style={styles.primaryText}>Save</Text>
-      </Pressable>
+      <Text style={styles.savedNote}>Changes are saved automatically.</Text>
     </ScrollView>
   );
 }
@@ -150,6 +170,5 @@ const styles = StyleSheet.create({
   providerChipTextActive: { color: "#fff" },
   secondary: { marginTop: 24, paddingVertical: 14, borderRadius: 10, borderWidth: 1, borderColor: "#cbd5e1", alignItems: "center" },
   secondaryText: { color: "#334155", fontSize: 16, fontWeight: "500" },
-  primary: { marginTop: 12, backgroundColor: "#2563eb", paddingVertical: 16, borderRadius: 12, alignItems: "center" },
-  primaryText: { color: "#fff", fontSize: 17, fontWeight: "700" },
+  savedNote: { textAlign: "center", color: "#94a3b8", fontSize: 12, marginTop: 14 },
 });

@@ -106,11 +106,8 @@ export default function App() {
       {screen === "settings" && (
         <SettingsScreen
           initial={settings}
-          onSaved={(s) => {
-            setSettings(s);
-            setScreen("capture");
-          }}
-          onBack={() => setScreen("capture")}
+          onChange={setSettings}
+          onClose={() => setScreen("capture")}
         />
       )}
 
