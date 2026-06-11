@@ -2,7 +2,7 @@
   "expo": {
     "name": "Účtenkomat",
     "slug": "receipt2fakturoid",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -23,9 +23,9 @@
     },
     "android": {
       "package": "cz.jakubpistek.receipt2fakturoid",
-      "versionCode": 5,
+      "versionCode": 6,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#2563eb",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
