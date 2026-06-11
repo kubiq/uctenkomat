@@ -1,47 +1,106 @@
-# invoice-extractor
+# Receipt to Fakturoid
 
-A mobile app that photographs a Czech store receipt (účtenka), parses it into **line
-items + prices + per-line VAT** with a vision LLM, lets you **review/edit**, and creates an
-expense (**náklad**) in Fakturoid — all from the phone, no backend.
+Snap a photo of a Czech store receipt (**účtenka**) and turn it into an expense
+(**náklad**) in [Fakturoid](https://www.fakturoid.cz) — right from your phone. A vision LLM
+reads the receipt into structured data (items, prices, per-line VAT, supplier IČO/DIČ), you
+review and edit, and the app files it in Fakturoid.
+
+No backend, no accounts to trust — you bring your own OpenAI and Fakturoid keys, and they
+never leave your device.
 
 ```
-[Expo app]  ──your OpenAI key──▶  OpenAI (photo → structured JSON)
-  capture / review / confirm
-            ──your Fakturoid creds──▶  Fakturoid v3 (match supplier by IČO, create náklad)
+┌─────────────┐   your OpenAI key    ┌──────────┐
+│  Expo app   │ ───────────────────▶ │  OpenAI  │  photo → structured JSON
+│  (Android)  │                      └──────────┘
+│  capture →  │   your Fakturoid     ┌──────────┐
+│  review →   │ ───credentials─────▶ │ Fakturoid│  match supplier by IČO,
+│  confirm    │                      │   API v3 │  create the expense (náklad)
+└─────────────┘                      └──────────┘
 ```
 
-## Bring your own keys (BYOK)
-The app holds no shared secrets. Each user enters, in **Settings** (stored in
-`expo-secure-store` on the device):
-- an **OpenAI API key** (parses the image — ~$0.01/receipt)
-- **Fakturoid** Client ID + Client Secret + account slug (creates the expense)
-
-## Run
-```bash
-cd app
-npm install
-npx expo start          # open in Expo Go (SDK 54) on your phone
-```
-See `app/README.md` for the SDK note and troubleshooting.
-
-First launch → **Settings ⚙︎**: paste your OpenAI key and Fakturoid Client ID / Secret /
-slug, tap **Test connection**, Save. Then take a photo → review items, per-line VAT, and
-supplier (auto-matched by IČO, with manual override) → **Create expense**.
+## Features
+- 📷 **Photo → expense** in a few taps; works on photos and gallery images.
+- 🧾 **Czech receipts**: extracts line items, quantities, unit/total prices, and the
+  **per-line VAT rate (DPH%)**.
+- 🏢 **Supplier auto-match**: resolves the Fakturoid subject by **IČO** (creates it if
+  missing), so "Čerpací stanice JIMO PLUS s.r.o." maps to the right legal entity. Manual
+  override available.
+- ✅ **Review before filing**: edit every field; built-in **VAT reconciliation** warns if
+  the recap doesn't add up (catches OCR misreads before they hit your books).
+- 🔐 **Bring your own keys (BYOK)**: keys live only in your device's secure storage.
+- 💸 **~$0.01 per receipt** in OpenAI usage.
 
 ## How it works
-- `app/src/openai.ts` — sends the downscaled photo to OpenAI with Structured Outputs and a
-  receipt JSON schema (`app/src/receipt.ts`).
-- `app/src/fakturoid.ts` — Fakturoid v3 client: OAuth token, search/create supplier by IČO,
-  create expense (per-line VAT, `vat_price_mode: from_total_with_vat`).
+The app talks directly to OpenAI and Fakturoid — there is no server in between.
+
+- `app/src/openai.ts` — sends the downscaled photo to OpenAI with **Structured Outputs**
+  and a receipt JSON schema (`app/src/receipt.ts`).
+- `app/src/fakturoid.ts` — Fakturoid v3 client: OAuth token, search/create supplier by
+  IČO, create expense (per-line VAT, `vat_price_mode: from_total_with_vat`).
 - `app/src/screens/` — Capture, Review (edit + VAT reconciliation), Settings, Success.
 
-## Notes
-- Native camera needs a real device (Expo Go or a dev build), not the web target.
-- A prior version used a Node/Express backend; it was removed in favor of BYOK app-direct.
-  It's still in git history if you ever want a managed backend (recommended if this goes
-  public — see below).
+## Requirements
+- An **OpenAI API key** — <https://platform.openai.com> (vision-capable, e.g. `gpt-4o`).
+- A **Fakturoid** account and an **API app** (Client Credentials):
+  *Nastavení → API / Propojení aplikací → Nová aplikace*. You'll get a **Client ID** and
+  **Client Secret**; your **account slug** is the part in `https://app.fakturoid.cz/<slug>/…`.
+- For development: [Node.js](https://nodejs.org) + [Expo](https://expo.dev) and the **Expo
+  Go** app (SDK 54) on an Android phone.
 
-## If this ever goes public / to a store
-BYOK gets clunky (per-user key setup) and storing each user's Fakturoid secret on-device is
-a powerful credential. At that point a managed backend — users authorize via Fakturoid
-OAuth redirect and you hold tokens server-side — is the cleaner model.
+## Getting started (development)
+```bash
+git clone https://github.com/kubiq/receipt-to-fakturoid-app.git
+cd receipt-to-fakturoid-app/app
+npm install
+npx expo start          # open in Expo Go on your phone
+```
+On first launch, open **Settings ⚙︎** and enter your OpenAI key and Fakturoid Client ID /
+Secret / slug, then **Test connection** → **Save**. Take a photo, review the items and VAT,
+pick/confirm the supplier, and **Create expense**.
+
+See [`app/README.md`](app/README.md) for the Expo SDK note and troubleshooting (including
+the "needs a newer Expo Go" message and LAN setup).
+
+## Build an installable Android app
+Standalone APK via [EAS Build](https://docs.expo.dev/build/introduction/) — no Google Play
+account needed for personal use:
+```bash
+cd app
+npm install -g eas-cli
+eas login                                   # free Expo account
+eas build -p android --profile preview      # → installable APK link
+```
+Open the resulting link on your phone to install. (`production` profile builds an AAB for
+the Play Store.)
+
+### Over-the-air updates
+JS/UI changes ship without a rebuild once an EAS-Update-enabled build is installed:
+```bash
+eas update --branch preview -m "what changed"
+```
+Native changes (SDK bump, new native module, permissions, app version) still require a new
+build.
+
+## Privacy & data
+- Your OpenAI and Fakturoid keys are stored only in **`expo-secure-store`** on the device;
+  they are never sent anywhere except directly to OpenAI and Fakturoid.
+- Receipt **images are sent to OpenAI** for parsing (subject to OpenAI's API data policy).
+- Creating an expense writes a **real document** to your Fakturoid account.
+- Extraction can make mistakes — **review every expense before filing**, especially VAT.
+
+## Tech stack
+React Native · Expo (SDK 54) · TypeScript · OpenAI (vision + Structured Outputs) ·
+Fakturoid API v3 · EAS Build & Update.
+
+## Status & roadmap
+A personal/BYOK tool. A previous Node/Express backend was removed in favor of app-direct
+(still in git history). If this ever grows into a public, store-distributed app, a managed
+backend — where users authorize via **Fakturoid OAuth redirect** and tokens are held
+server-side — would be the better model than each user pasting a client secret.
+
+## Disclaimer
+Not affiliated with Fakturoid or OpenAI. Provided as-is; you are responsible for the
+accuracy of the accounting data it produces. Always verify amounts and VAT before filing.
+
+## License
+[MIT](LICENSE)
