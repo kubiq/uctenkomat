@@ -81,7 +81,11 @@ export default function SettingsScreen({ initial, onChange, onClose }: Props) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 + kb }} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, { paddingBottom: 24 + kb }]}
+      keyboardShouldPersistTaps="handled"
+    >
       <View style={styles.headerRow}>
         <Pressable onPress={close} hitSlop={12}>
           <Text style={styles.back}>‹ Back</Text>
@@ -157,7 +161,8 @@ function Field({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 56, backgroundColor: "#fff" },
+  container: { flex: 1, backgroundColor: "#fff" },
+  content: { padding: 20, paddingTop: 56 },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
   back: { color: "#2563eb", fontSize: 16 },
   title: { fontSize: 20, fontWeight: "700" },
