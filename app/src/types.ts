@@ -46,4 +46,5 @@ export type Settings = {
   openaiApiKey: string;
   provider: ProviderId;
   creds: Record<string, string>;
+  recentTags?: string[]; // recently used expense tags, most-recent first (for quick re-add)
 };

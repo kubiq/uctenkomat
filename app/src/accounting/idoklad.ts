@@ -120,7 +120,13 @@ function isoDate(date: string | null): string | undefined {
   return /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T00:00:00` : undefined;
 }
 
-async function createExpense(c: Creds, receipt: Receipt, opts: { subjectId?: number }): Promise<CreatedExpense> {
+// Tags are accepted in opts for interface parity but not yet sent to iDoklad
+// (its ReceivedInvoice uses tag IDs that need a separate lookup/create step).
+async function createExpense(
+  c: Creds,
+  receipt: Receipt,
+  opts: { subjectId?: number; tags?: string[] },
+): Promise<CreatedExpense> {
   const subject = opts.subjectId
     ? { id: opts.subjectId, name: undefined as string | undefined, matchedBy: "explicit", created: false }
     : await findOrCreateContact(c, {

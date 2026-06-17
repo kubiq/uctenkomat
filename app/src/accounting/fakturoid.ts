@@ -80,7 +80,11 @@ async function findOrCreateSubjectByIco(
   return { id: created.id, name: created.name, matchedBy: "created", created: true };
 }
 
-async function createExpense(c: Creds, receipt: Receipt, opts: { subjectId?: number }): Promise<CreatedExpense> {
+async function createExpense(
+  c: Creds,
+  receipt: Receipt,
+  opts: { subjectId?: number; tags?: string[] },
+): Promise<CreatedExpense> {
   const subject = opts.subjectId
     ? { id: opts.subjectId, name: undefined as string | undefined, matchedBy: "explicit", created: false }
     : await findOrCreateSubjectByIco(c, {
@@ -89,11 +93,14 @@ async function createExpense(c: Creds, receipt: Receipt, opts: { subjectId?: num
         name: receipt.supplier_name || receipt.merchant,
       });
 
+  const tags = (opts.tags ?? []).map((t) => t.trim()).filter(Boolean);
   const payload = {
     subject_id: subject.id,
     document_type: "bill",
     vat_price_mode: "from_total_with_vat",
     issued_on: receipt.date || undefined,
+    // Fakturoid expenses accept a plain string array of tags.
+    ...(tags.length ? { tags } : {}),
     lines: receipt.items.map((item) => ({
       name: item.name,
       quantity: String(item.quantity ?? 1),
@@ -114,6 +121,7 @@ async function createExpense(c: Creds, receipt: Receipt, opts: { subjectId?: num
 export const fakturoidProvider: AccountingProvider = {
   id: "fakturoid",
   label: "Fakturoid",
+  supportsTags: true,
   setupHint: "Create an app in Fakturoid → Nastavení → API / Propojení aplikací (Client Credentials).",
   credentialFields: [
     { key: "clientId", label: "Client ID" },

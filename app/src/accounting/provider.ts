@@ -19,6 +19,9 @@ export interface AccountingProvider {
   setupHint: string;
   credentialFields: CredentialField[];
 
+  /** Whether opts.tags are sent through to the created expense. */
+  supportsTags?: boolean;
+
   /** Validate credentials cheaply (used by the Settings "Test connection"). */
   check(creds: Creds): Promise<boolean>;
 
@@ -27,7 +30,12 @@ export interface AccountingProvider {
 
   /**
    * Create the expense. When opts.subjectId is omitted, resolve the supplier
-   * from the receipt's IČO (create it if missing).
+   * from the receipt's IČO (create it if missing). opts.tags is honoured only
+   * when supportsTags is true; other providers ignore it.
    */
-  createExpense(creds: Creds, receipt: Receipt, opts: { subjectId?: number }): Promise<CreatedExpense>;
+  createExpense(
+    creds: Creds,
+    receipt: Receipt,
+    opts: { subjectId?: number; tags?: string[] },
+  ): Promise<CreatedExpense>;
 }

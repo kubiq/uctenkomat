@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
-import { loadSettings } from "./src/storage";
+import { loadSettings, saveSettings } from "./src/storage";
 import { prepareImageBase64 } from "./src/image";
 import { parseReceipt } from "./src/openai";
 import { showAlert } from "./src/ui";
@@ -50,6 +50,15 @@ export default function App() {
     }
   }
 
+  // Persist tags just used so they can be re-added quickly on later receipts.
+  function rememberTags(used: string[]) {
+    if (!settings || used.length === 0) return;
+    const merged = Array.from(new Set([...used, ...(settings.recentTags ?? [])])).slice(0, 20);
+    const next = { ...settings, recentTags: merged };
+    setSettings(next);
+    saveSettings(next);
+  }
+
   function finish() {
     if (createdCount.current > 0) {
       setSummary({ count: createdCount.current, last: lastExpense.current });
@@ -94,6 +103,8 @@ export default function App() {
         <ReviewScreen
           settings={settings}
           initial={receipt}
+          recentTags={settings.recentTags ?? []}
+          onUsedTags={rememberTags}
           onBack={() => processQueue(queue.slice(1), settings)} // skip this one, continue queue
           onDone={(e) => {
             createdCount.current += 1;

@@ -16,6 +16,8 @@ import type { CreatedExpense, Receipt, Settings, Subject } from "../types";
 type Props = {
   settings: Settings;
   initial: Receipt;
+  recentTags?: string[];
+  onUsedTags?: (tags: string[]) => void;
   onDone: (expense: CreatedExpense) => void;
   onBack: () => void;
 };
@@ -28,7 +30,7 @@ function num(v: string): number | null {
   return Number.isNaN(n) ? null : n;
 }
 
-export default function ReviewScreen({ settings, initial, onDone, onBack }: Props) {
+export default function ReviewScreen({ settings, initial, recentTags = [], onUsedTags, onDone, onBack }: Props) {
   const [receipt, setReceipt] = useState<Receipt>(initial);
   const [override, setOverride] = useState<Subject | null>(null); // manual supplier override
   const [query, setQuery] = useState(initial.supplier_name ?? initial.merchant ?? "");
@@ -36,6 +38,8 @@ export default function ReviewScreen({ settings, initial, onDone, onBack }: Prop
   const [showSearch, setShowSearch] = useState(false);
   const [searching, setSearching] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
 
   const lineSum = useMemo(
     () => round2(receipt.items.reduce((acc, it) => acc + (it.total_price || 0), 0)),
@@ -62,6 +66,17 @@ export default function ReviewScreen({ settings, initial, onDone, onBack }: Prop
   function removeItem(i: number) {
     setReceipt((r) => ({ ...r, items: r.items.filter((_, idx) => idx !== i) }));
   }
+
+  function addTag(raw: string) {
+    const t = raw.trim();
+    if (!t) return;
+    setTags((prev) => (prev.includes(t) ? prev : [...prev, t]));
+    setTagInput("");
+  }
+  function removeTag(t: string) {
+    setTags((prev) => prev.filter((x) => x !== t));
+  }
+  const tagSuggestions = recentTags.filter((t) => !tags.includes(t)).slice(0, 8);
 
   async function doSearch() {
     setSearching(true);
@@ -90,7 +105,9 @@ export default function ReviewScreen({ settings, initial, onDone, onBack }: Prop
     setSubmitting(true);
     try {
       // Omit subjectId -> resolve by IČO; include it only when overriding.
-      const expense = await provider.createExpense(creds, receipt, { subjectId: override?.id });
+      const cleanTags = provider.supportsTags ? tags : [];
+      const expense = await provider.createExpense(creds, receipt, { subjectId: override?.id, tags: cleanTags });
+      if (cleanTags.length) onUsedTags?.(cleanTags);
       onDone(expense);
     } catch (e: any) {
       showAlert("Could not create expense", e?.message ?? String(e));
@@ -206,6 +223,46 @@ export default function ReviewScreen({ settings, initial, onDone, onBack }: Prop
         </Text>
       )}
 
+      {/* Tags — captured here, used for filtering/reporting in the accounting system */}
+      {provider.supportsTags && (
+        <>
+          <Text style={styles.section}>Tags</Text>
+          {tags.length > 0 && (
+            <View style={styles.tagWrap}>
+              {tags.map((t) => (
+                <Pressable key={t} style={styles.tagChip} onPress={() => removeTag(t)} hitSlop={6}>
+                  <Text style={styles.tagChipText}>{t}</Text>
+                  <Text style={styles.tagChipX}>✕</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+          <View style={styles.searchRow}>
+            <TextInput
+              style={[styles.input, { flex: 1 }]}
+              value={tagInput}
+              onChangeText={setTagInput}
+              placeholder="Add a tag…"
+              autoCapitalize="none"
+              returnKeyType="done"
+              onSubmitEditing={() => addTag(tagInput)}
+            />
+            <Pressable style={styles.searchBtn} onPress={() => addTag(tagInput)}>
+              <Text style={styles.searchBtnText}>Add</Text>
+            </Pressable>
+          </View>
+          {tagSuggestions.length > 0 && (
+            <View style={styles.tagWrap}>
+              {tagSuggestions.map((t) => (
+                <Pressable key={t} style={styles.tagSuggest} onPress={() => addTag(t)} hitSlop={6}>
+                  <Text style={styles.tagSuggestText}>+ {t}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+        </>
+      )}
+
       <Pressable style={styles.submit} onPress={submit} disabled={submitting}>
         {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Create expense in {provider.label}</Text>}
       </Pressable>
@@ -261,6 +318,12 @@ const styles = StyleSheet.create({
   totalRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 8 },
   muted: { color: "#64748b" },
   warn: { color: "#b45309", marginTop: 6 },
+  tagWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },
+  tagChip: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#dbeafe", borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6 },
+  tagChipText: { color: "#1e3a8a", fontWeight: "600" },
+  tagChipX: { color: "#1e3a8a", fontSize: 12 },
+  tagSuggest: { borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6 },
+  tagSuggestText: { color: "#475569" },
   submit: { backgroundColor: "#16a34a", borderRadius: 12, paddingVertical: 16, alignItems: "center", marginTop: 28 },
   submitText: { color: "#fff", fontSize: 17, fontWeight: "700" },
 });
