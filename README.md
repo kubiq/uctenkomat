@@ -59,10 +59,12 @@ no app store.
 - **Windows** — download and run the `.exe` installer.
 - **macOS** — download the `.dmg` (Apple Silicon / arm64) and drag the app to Applications.
 
-> **Unsigned app — how to open.** The desktop builds aren't code-signed (no paid
-> Apple/Microsoft certificates), so the OS warns on first launch. It's safe to open:
+> **Unverified app — how to open.** The desktop builds use no paid Apple/Microsoft
+> certificates, so the OS warns on first launch. It's safe to open:
 > - **Windows** — at the "Windows protected your PC" SmartScreen prompt, click **More info → Run anyway**.
-> - **macOS** — **right-click the app → Open**, then **Open** again in the dialog (don't double-click the first time). Or allow it under *System Settings → Privacy & Security*.
+> - **macOS** — the app is ad-hoc signed but not notarized, so macOS shows *"Apple could not verify…"*.
+>   Open it via **right-click → Open** (or **System Settings → Privacy & Security → Open Anyway**).
+>   If macOS still blocks it, run `xattr -dr com.apple.quarantine /Applications/Uctenkomat.app`.
 
 > iPhone isn't supported — Apple requires signing/$99-a-year, and a browser PWA would need a
 > CORS proxy for Fakturoid. The desktop app (which uses Node under the hood) avoids that.
