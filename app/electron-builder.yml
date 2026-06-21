@@ -1,6 +1,10 @@
 appId: cz.jakubpistek.receipt2fakturoid
-productName: Účtenkomat
+# ASCII: macOS Chromium SIGTRAPs at launch on a non-ASCII app name — Electron
+# builds the executable/helper process names from it. The accented brand name is
+# shown in the app's own window title and UI, not the bundle name.
+productName: Uctenkomat
 artifactName: Uctenkomat-${version}-${arch}.${ext}
+afterPack: electron/afterPack.cjs
 # Override the package.json "main" (which Expo uses) for the packaged Electron app.
 extraMetadata:
   main: electron/main.cjs
@@ -24,3 +28,5 @@ mac:
     - dmg
   category: public.app-category.finance
   icon: assets/icon.png
+  # No Apple cert; ad-hoc signing is done in afterPack, so skip electron-builder's.
+  identity: null
