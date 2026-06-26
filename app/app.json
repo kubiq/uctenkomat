@@ -43,7 +43,8 @@
           "cameraPermission": "Take photos of receipts to extract their items.",
           "photosPermission": "Pick receipt photos to extract their items."
         }
-      ]
+      ],
+      "./plugins/withApkName"
     ],
     "extra": {
       "eas": {
