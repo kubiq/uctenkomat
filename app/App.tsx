@@ -2,10 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { loadSettings, saveSettings } from "./src/storage";
-import { prepareImageBase64 } from "./src/image";
+import { prepareImageBase64, readPdfBase64 } from "./src/image";
 import { parseReceipt } from "./src/openai";
 import { showAlert } from "./src/ui";
-import type { CreatedExpense, Receipt, Settings } from "./src/types";
+import type { CreatedExpense, PickedFile, Receipt, Settings } from "./src/types";
 import CaptureScreen from "./src/screens/CaptureScreen";
 import ReviewScreen from "./src/screens/ReviewScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
@@ -17,7 +17,7 @@ export default function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [screen, setScreen] = useState<Screen>("capture");
   const [receipt, setReceipt] = useState<Receipt | null>(null);
-  const [queue, setQueue] = useState<string[]>([]);
+  const [queue, setQueue] = useState<PickedFile[]>([]);
   const [busyMsg, setBusyMsg] = useState("Reading the receipt…");
   const [summary, setSummary] = useState<{ count: number; last: CreatedExpense | null }>({ count: 0, last: null });
 
@@ -29,24 +29,25 @@ export default function App() {
     loadSettings().then(setSettings);
   }, []);
 
-  // Walk the queue: parse the first image, show review; on error skip it and continue.
-  async function processQueue(uris: string[], current: Settings) {
-    if (uris.length === 0) {
+  // Walk the queue: parse the first file, show review; on error skip it and continue.
+  async function processQueue(files: PickedFile[], current: Settings) {
+    if (files.length === 0) {
       finish();
       return;
     }
-    setQueue(uris);
-    const done = total.current - uris.length + 1;
+    setQueue(files);
+    const done = total.current - files.length + 1;
     setBusyMsg(total.current > 1 ? `Reading receipt ${done} of ${total.current}…` : "Reading the receipt…");
     setScreen("busy");
     try {
-      const base64 = await prepareImageBase64(uris[0]);
-      const parsed = await parseReceipt(current, base64);
+      const file = files[0];
+      const base64 = file.isPdf ? await readPdfBase64(file) : await prepareImageBase64(file.uri);
+      const parsed = await parseReceipt(current, base64, file.isPdf);
       setReceipt(parsed);
       setScreen("review");
     } catch (e: any) {
       showAlert("Parsing failed", e?.message ?? String(e));
-      processQueue(uris.slice(1), current);
+      processQueue(files.slice(1), current);
     }
   }
 
@@ -68,12 +69,12 @@ export default function App() {
     }
   }
 
-  function startBatch(uris: string[]) {
+  function startBatch(files: PickedFile[]) {
     if (!settings) return;
-    total.current = uris.length;
+    total.current = files.length;
     createdCount.current = 0;
     lastExpense.current = null;
-    processQueue(uris, settings);
+    processQueue(files, settings);
   }
 
   if (!settings) {

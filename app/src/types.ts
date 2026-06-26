@@ -24,6 +24,15 @@ export type Receipt = {
   total: number | null;
 };
 
+// A receipt source picked by the user: an image (camera/gallery) or a PDF.
+// `base64` is pre-read on web by the document picker; native reads it lazily.
+export type PickedFile = {
+  uri: string;
+  isPdf: boolean;
+  base64?: string;
+  name?: string;
+};
+
 export type Subject = {
   id: number;
   name: string;

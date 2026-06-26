@@ -1,13 +1,14 @@
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
 import { isConfigured } from "../accounting";
 import { showAlert } from "../ui";
-import type { Settings } from "../types";
+import type { PickedFile, Settings } from "../types";
 
 type Props = {
   settings: Settings;
-  onSelected: (uris: string[]) => void;
+  onSelected: (files: PickedFile[]) => void;
   onOpenSettings: () => void;
 };
 
@@ -29,7 +30,8 @@ export default function CaptureScreen({ settings, onSelected, onOpenSettings }: 
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) return showAlert("Permission denied", "Cannot access the camera.");
     const result = await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 1 });
-    if (!result.canceled && result.assets?.length) onSelected(result.assets.map((a) => a.uri));
+    if (!result.canceled && result.assets?.length)
+      onSelected(result.assets.map((a) => ({ uri: a.uri, isPdf: false })));
   }
 
   async function pickImages() {
@@ -43,7 +45,20 @@ export default function CaptureScreen({ settings, onSelected, onOpenSettings }: 
       quality: 1,
       allowsMultipleSelection: isWeb,
     });
-    if (!result.canceled && result.assets?.length) onSelected(result.assets.map((a) => a.uri));
+    if (!result.canceled && result.assets?.length)
+      onSelected(result.assets.map((a) => ({ uri: a.uri, isPdf: false })));
+  }
+
+  async function pickPdfs() {
+    if (!guard()) return;
+    const result = await DocumentPicker.getDocumentAsync({
+      type: "application/pdf",
+      multiple: true,
+      copyToCacheDirectory: true,
+      base64: true, // web only; native reads base64 lazily off disk
+    });
+    if (!result.canceled && result.assets?.length)
+      onSelected(result.assets.map((a) => ({ uri: a.uri, isPdf: true, base64: a.base64, name: a.name })));
   }
 
   return (
@@ -66,7 +81,10 @@ export default function CaptureScreen({ settings, onSelected, onOpenSettings }: 
             {isWeb ? "Select receipt images" : "Pick from gallery"}
           </Text>
         </Pressable>
-        {isWeb && <Text style={styles.muted}>You can select multiple images — each is processed as its own receipt.</Text>}
+        <Pressable style={styles.secondary} onPress={pickPdfs}>
+          <Text style={styles.secondaryText}>Select PDF</Text>
+        </Pressable>
+        {isWeb && <Text style={styles.muted}>You can select multiple images or PDFs — each is processed as its own receipt.</Text>}
         {needsSettings && <Text style={styles.warn}>Set your keys in Settings ⚙︎</Text>}
       </View>
     </LinearGradient>

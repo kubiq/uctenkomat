@@ -13,10 +13,15 @@ export async function checkOpenAiKey(apiKey: string): Promise<boolean> {
 }
 
 /**
- * Parse a receipt image (base64 JPEG) into structured JSON via OpenAI vision +
- * Structured Outputs. Runs entirely on-device with the user's own key.
+ * Parse a receipt into structured JSON via OpenAI vision + Structured Outputs.
+ * Accepts a base64 JPEG (default) or, when `isPdf` is true, a base64 PDF — gpt-4o
+ * reads both the text and page images of the PDF. Runs entirely on-device with
+ * the user's own key.
  */
-export async function parseReceipt(settings: Settings, base64Jpeg: string): Promise<Receipt> {
+export async function parseReceipt(settings: Settings, base64: string, isPdf = false): Promise<Receipt> {
+  const source = isPdf
+    ? { type: "file", file: { filename: "receipt.pdf", file_data: `data:application/pdf;base64,${base64}` } }
+    : { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64}` } };
   const body = {
     model: OPENAI_MODEL,
     messages: [
@@ -25,7 +30,7 @@ export async function parseReceipt(settings: Settings, base64Jpeg: string): Prom
         role: "user",
         content: [
           { type: "text", text: "Extract the purchased line items and their prices." },
-          { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Jpeg}` } },
+          source,
         ],
       },
     ],
