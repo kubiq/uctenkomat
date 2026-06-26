@@ -28,8 +28,8 @@ jobs:
             pattern: "app/electron-dist/*.dmg"
     runs-on: ${{ matrix.os }}
     env:
-      # We don't code-sign; stop electron-builder from trying.
-      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      # No code-signing certs. macOS is ad-hoc signed in app/electron/afterPack.cjs;
+      # Windows/Linux ship unsigned.
       TAG: ${{ github.event.inputs.release_tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
