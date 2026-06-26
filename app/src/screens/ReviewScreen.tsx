@@ -56,6 +56,7 @@ export default function ReviewScreen({ settings, initial, recentTags = [], onUse
     receipt.vat_summary.length > 0 && receipt.total != null && Math.abs(recapTotal - receipt.total) > 0.05;
 
   const ico = (receipt.supplier_ico ?? "").replace(/\D/g, "");
+  const dic = (receipt.supplier_dic ?? "").replace(/[^A-Za-z0-9]/g, "");
   const provider = getProvider(settings.provider);
   const creds = providerCreds(settings);
   const kb = useKeyboardHeight();
@@ -94,17 +95,17 @@ export default function ReviewScreen({ settings, initial, recentTags = [], onUse
       showAlert("No items", "Add at least one line item.");
       return;
     }
-    if (!override && !ico) {
+    if (!override && !ico && !dic) {
       showAlert(
         "No supplier",
-        "No IČO was extracted, so the supplier can't be auto-matched. Pick a supplier manually.",
+        "No IČO or DIČ was extracted, so the supplier can't be auto-matched. Pick a supplier manually.",
       );
       setShowSearch(true);
       return;
     }
     setSubmitting(true);
     try {
-      // Omit subjectId -> resolve by IČO; include it only when overriding.
+      // Omit subjectId -> resolve by IČO/DIČ/name; include it only when overriding.
       const cleanTags = provider.supportsTags ? tags : [];
       const expense = await provider.createExpense(creds, receipt, { subjectId: override?.id, tags: cleanTags });
       if (cleanTags.length) onUsedTags?.(cleanTags);
@@ -159,8 +160,11 @@ export default function ReviewScreen({ settings, initial, recentTags = [], onUse
         <View style={styles.supplierBox}>
           <Text style={styles.supplierName}>{receipt.supplier_name ?? receipt.merchant ?? "—"}</Text>
           <Text style={styles.muted}>
-            {ico ? `Auto-match by IČO ${ico}` : "⚠ no IČO extracted — pick a supplier manually"}
-            {receipt.supplier_dic ? ` · ${receipt.supplier_dic}` : ""}
+            {ico
+              ? `Auto-match by IČO ${ico}${receipt.supplier_dic ? ` · ${receipt.supplier_dic}` : ""}`
+              : dic
+                ? `Auto-match by DIČ ${receipt.supplier_dic}`
+                : "⚠ no IČO/DIČ extracted — pick a supplier manually"}
           </Text>
           <Pressable onPress={() => setShowSearch((s) => !s)} hitSlop={8}>
             <Text style={styles.link}>{showSearch ? "Hide search" : "Override supplier…"}</Text>

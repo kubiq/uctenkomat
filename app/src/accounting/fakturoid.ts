@@ -8,6 +8,8 @@ const API_BASE = "https://app.fakturoid.cz/api/v3";
 const USER_AGENT = "ReceiptToFakturoid/1.0 (app)";
 
 const onlyDigits = (s: string | null | undefined) => (s ?? "").replace(/\D/g, "");
+// DIČ comparison key: uppercase, alphanumerics only (so "CZ 123" == "cz123").
+const dicKey = (s: string | null | undefined) => (s ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
 // --- token cache (per app session, keyed by client id) ---------------------
 let cached: { key: string; value: string; expiresAt: number } | null = null;
@@ -56,20 +58,28 @@ async function searchSubjects(c: Creds, query: string): Promise<Subject[]> {
   }));
 }
 
-async function findOrCreateSubjectByIco(
+async function findOrCreateSubject(
   c: Creds,
   supplier: { ico: string | null; dic: string | null; name: string | null },
 ): Promise<{ id: number; name: string; matchedBy: string; created: boolean }> {
   const icoDigits = onlyDigits(supplier.ico);
+  const dic = dicKey(supplier.dic);
+  // Try precise identifiers first (IČO, then DIČ — Fakturoid fulltext indexes
+  // both registration_no and vat_no), then fall back to a fuzzy name match.
   if (icoDigits) {
     const hit = (await searchSubjects(c, icoDigits)).find((x) => onlyDigits(x.registration_no) === icoDigits);
     if (hit) return { id: hit.id, name: hit.name, matchedBy: "ico", created: false };
-  } else if (supplier.name) {
+  }
+  if (dic) {
+    const hit = (await searchSubjects(c, dic)).find((x) => dicKey(x.vat_no) === dic);
+    if (hit) return { id: hit.id, name: hit.name, matchedBy: "dic", created: false };
+  }
+  if (supplier.name) {
     const first = (await searchSubjects(c, supplier.name))[0];
     if (first) return { id: first.id, name: first.name, matchedBy: "name", created: false };
   }
   const name = supplier.name || (icoDigits ? `Supplier ${icoDigits}` : "");
-  if (!name) throw new Error("Cannot resolve supplier: no IČO match and no name to create one.");
+  if (!name) throw new Error("Cannot resolve supplier: no IČO/DIČ match and no name to create one.");
   const created = await api(c, "POST", "/subjects.json", {
     name,
     registration_no: icoDigits || undefined,
@@ -87,7 +97,7 @@ async function createExpense(
 ): Promise<CreatedExpense> {
   const subject = opts.subjectId
     ? { id: opts.subjectId, name: undefined as string | undefined, matchedBy: "explicit", created: false }
-    : await findOrCreateSubjectByIco(c, {
+    : await findOrCreateSubject(c, {
         ico: receipt.supplier_ico,
         dic: receipt.supplier_dic,
         name: receipt.supplier_name || receipt.merchant,

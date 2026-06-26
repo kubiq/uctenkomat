@@ -19,6 +19,8 @@ function mapVatRateType(rate: number | null): number {
 }
 
 const onlyDigits = (s: string | null | undefined) => (s ?? "").replace(/\D/g, "");
+// DIČ comparison key: uppercase, alphanumerics only (so "CZ 123" == "cz123").
+const dicKey = (s: string | null | undefined) => (s ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 
 // --- token cache (keyed by client id) --------------------------------------
 let cached: { key: string; value: string; expiresAt: number } | null = null;
@@ -88,20 +90,33 @@ async function findContactByIco(c: Creds, ico: string): Promise<Subject | null> 
   return hit ?? null;
 }
 
+async function findContactByDic(c: Creds, dic: string): Promise<Subject | null> {
+  const q = encodeURIComponent(`VatIdentificationNumber~eq~${dic}`);
+  const json = await api(c, "GET", `/Contacts?filter=${q}&pageSize=20`);
+  const hit = items(json).map(toSubject).find((x: Subject) => dicKey(x.vat_no) === dicKey(dic));
+  return hit ?? null;
+}
+
 async function findOrCreateContact(
   c: Creds,
   supplier: { ico: string | null; dic: string | null; name: string | null },
 ): Promise<{ id: number; name: string; matchedBy: string; created: boolean }> {
   const icoDigits = onlyDigits(supplier.ico);
+  // Precise identifiers first (IČO, then DIČ), then a fuzzy name match.
   if (icoDigits) {
     const hit = await findContactByIco(c, icoDigits);
     if (hit) return { id: hit.id, name: hit.name, matchedBy: "ico", created: false };
-  } else if (supplier.name) {
+  }
+  if (supplier.dic) {
+    const hit = await findContactByDic(c, supplier.dic);
+    if (hit) return { id: hit.id, name: hit.name, matchedBy: "dic", created: false };
+  }
+  if (supplier.name) {
     const first = (await searchSubjects(c, supplier.name))[0];
     if (first) return { id: first.id, name: first.name, matchedBy: "name", created: false };
   }
   const name = supplier.name || (icoDigits ? `Supplier ${icoDigits}` : "");
-  if (!name) throw new Error("Cannot resolve supplier: no IČO match and no name to create one.");
+  if (!name) throw new Error("Cannot resolve supplier: no IČO/DIČ match and no name to create one.");
   // Start from the default contact model so required fields (e.g. CountryId) are set.
   const model = unwrap(await api(c, "GET", "/Contacts/Default"));
   const created = unwrap(
