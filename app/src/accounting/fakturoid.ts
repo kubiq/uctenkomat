@@ -32,7 +32,13 @@ async function getToken(c: Creds): Promise<string> {
   return cached.value;
 }
 
-async function api(c: Creds, method: string, path: string, body?: unknown): Promise<any> {
+async function api(
+  c: Creds,
+  method: string,
+  path: string,
+  body?: unknown,
+  opts: { allow404?: boolean } = {},
+): Promise<any> {
   const token = await getToken(c);
   const res = await fetch(`${API_BASE}/accounts/${c.slug}${path}`, {
     method,
@@ -44,12 +50,17 @@ async function api(c: Creds, method: string, path: string, body?: unknown): Prom
     },
     body: body ? JSON.stringify(body) : undefined,
   });
+  if (opts.allow404 && res.status === 404) return null;
   if (!res.ok) throw new Error(`Fakturoid ${method} ${path} failed (${res.status}): ${await res.text()}`);
   return res.json();
 }
 
 async function searchSubjects(c: Creds, query: string): Promise<Subject[]> {
-  const list = await api(c, "GET", `/subjects/search.json?query=${encodeURIComponent(query || "")}`);
+  // Fakturoid's fulltext search returns 404 (resource_not_found) when nothing
+  // matches — treat that as an empty result so callers fall through to create.
+  const list = await api(c, "GET", `/subjects/search.json?query=${encodeURIComponent(query || "")}`, undefined, {
+    allow404: true,
+  });
   return (list || []).map((x: any) => ({
     id: x.id,
     name: x.name,
