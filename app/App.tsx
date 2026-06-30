@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { useShareIntent } from "expo-share-intent";
 import { loadSettings, saveSettings } from "./src/storage";
 import { prepareImageBase64, readPdfBase64 } from "./src/image";
 import { parseReceipt } from "./src/openai";
+import { isConfigured } from "./src/accounting";
 import { showAlert } from "./src/ui";
 import type { CreatedExpense, PickedFile, Receipt, Settings } from "./src/types";
 import CaptureScreen from "./src/screens/CaptureScreen";
@@ -25,9 +27,31 @@ export default function App() {
   const createdCount = useRef(0);
   const lastExpense = useRef<CreatedExpense | null>(null);
 
+  // Files shared into the app from other apps (gallery, file manager, …).
+  const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntent({ resetOnBackground: true });
+
   useEffect(() => {
     loadSettings().then(setSettings);
   }, []);
+
+  // When opened via Android share, turn the shared files into a batch and process them.
+  useEffect(() => {
+    if (!hasShareIntent || !settings) return;
+    const files: PickedFile[] = (shareIntent.files ?? []).map((f) => ({
+      uri: f.path,
+      isPdf: (f.mimeType ?? "").includes("pdf") || (f.fileName ?? "").toLowerCase().endsWith(".pdf"),
+      name: f.fileName ?? undefined,
+    }));
+    resetShareIntent();
+    if (files.length === 0) return;
+    if (!isConfigured(settings)) {
+      showAlert("Setup needed", "Set your OpenAI and Fakturoid/iDoklad keys in Settings first.");
+      setScreen("settings");
+      return;
+    }
+    startBatch(files);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasShareIntent, settings]);
 
   // Walk the queue: parse the first file, show review; on error skip it and continue.
   async function processQueue(files: PickedFile[], current: Settings) {
