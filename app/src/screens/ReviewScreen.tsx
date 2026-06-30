@@ -31,7 +31,11 @@ function num(v: string): number | null {
 }
 
 export default function ReviewScreen({ settings, initial, recentTags = [], onUsedTags, onDone, onBack }: Props) {
-  const [receipt, setReceipt] = useState<Receipt>(initial);
+  // Fall back to the supplier name when no merchant/trade name was extracted (e.g. invoices).
+  const [receipt, setReceipt] = useState<Receipt>(() => ({
+    ...initial,
+    merchant: initial.merchant ?? initial.supplier_name ?? null,
+  }));
   const [override, setOverride] = useState<Subject | null>(null); // manual supplier override
   const [query, setQuery] = useState(initial.supplier_name ?? initial.merchant ?? "");
   const [subjects, setSubjects] = useState<Subject[]>([]);

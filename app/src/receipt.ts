@@ -2,10 +2,14 @@
 // Mirrors the schema the old server used (items + per-line VAT + supplier IČO/DIČ + recap).
 
 export const RECEIPT_PROMPT = [
-  "You are reading a Czech retail store receipt (uctenka / paragon).",
+  "You are reading a Czech purchase document: a retail store receipt (uctenka / paragon)",
+  "or an invoice (faktura). Both describe a purchase from a supplier.",
   "Extract every purchased line item with its name and prices.",
   "Also extract the supplier identifiers: IČO (label 'IČ'/'IČO', 8 digits) and",
   "DIČ (label 'DIČ', 'CZ' + digits), plus the legal company name next to the IČO.",
+  "Set 'merchant' to the seller's name: the printed store/trade name on a receipt,",
+  "or on an invoice the supplier (dodavatel) company name — never leave it empty when a",
+  "supplier is identifiable. Ignore the customer/buyer (odběratel) block.",
   "For each line item, extract its VAT/DPH rate in percent from the 'DPH%' column (e.g. 21, 12, 0).",
   "Also extract the receipt's VAT recap block (rows of 'DPH% / Bez DPH / DPH / Celkem',",
   "often printed twice) into vat_summary, one entry per VAT rate with its base and VAT amount.",
@@ -19,7 +23,7 @@ export const RECEIPT_JSON_SCHEMA = {
   additionalProperties: false,
   required: ["merchant", "supplier_name", "supplier_ico", "supplier_dic", "date", "currency", "items", "vat_summary", "total"],
   properties: {
-    merchant: { type: ["string", "null"], description: "Store / merchant name as printed (trade name)" },
+    merchant: { type: ["string", "null"], description: "Seller name: receipt trade name, or invoice supplier (dodavatel) company name" },
     supplier_name: { type: ["string", "null"], description: "Legal company name next to the IČO" },
     supplier_ico: { type: ["string", "null"], description: "IČO, 8 digits, digits only" },
     supplier_dic: { type: ["string", "null"], description: "DIČ, usually 'CZ' + digits" },
