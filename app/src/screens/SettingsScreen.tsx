@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import Constants from "expo-constants";
 import { checkOpenAiKey } from "../openai";
 import { PROVIDERS, getProvider, providerCreds } from "../accounting";
@@ -13,6 +13,8 @@ type Props = {
   onChange: (s: Settings) => void; // update app state (no navigation)
   onClose: () => void;
 };
+
+const OPENAI_BILLING_URL = "https://platform.openai.com/settings/organization/billing/overview";
 
 // Trim values when persisting (raw stays in the fields for smooth typing).
 function trimmed(s: Settings): Settings {
@@ -96,6 +98,9 @@ export default function SettingsScreen({ initial, onChange, onClose }: Props) {
       <Text style={styles.group}>OpenAI</Text>
       <Field label="API key" value={s.openaiApiKey} onChange={setOpenAi} secure placeholder="sk-…" />
       <Text style={styles.hint}>Your own key from platform.openai.com. ~$0.01 per receipt.</Text>
+      <Pressable onPress={() => Linking.openURL(OPENAI_BILLING_URL)} hitSlop={8}>
+        <Text style={styles.link}>Add OpenAI credit →</Text>
+      </Pressable>
 
       <Text style={styles.group}>Accounting service</Text>
       <View style={styles.providerRow}>
@@ -169,6 +174,7 @@ const styles = StyleSheet.create({
   group: { fontSize: 16, fontWeight: "700", marginTop: 22, marginBottom: 6 },
   label: { fontSize: 13, color: "#475569", marginTop: 12, marginBottom: 4 },
   hint: { fontSize: 12, color: "#94a3b8", marginTop: 4 },
+  link: { fontSize: 13, color: "#2563eb", fontWeight: "600", marginTop: 8 },
   input: { borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 10, fontSize: 15, color: "#0f172a", backgroundColor: "#fff" },
   providerRow: { flexDirection: "row", gap: 10, marginBottom: 4 },
   providerChip: { paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20, borderWidth: 1, borderColor: "#cbd5e1" },
