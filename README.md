@@ -87,6 +87,19 @@ The app talks directly to OpenAI and your accounting service — there is no ser
 - For development: [Node.js](https://nodejs.org) + [Expo](https://expo.dev) and the **Expo
   Go** app (SDK 54) on an Android phone.
 
+### Adding OpenAI credit
+The key needs **pay-as-you-go API credit**, which is separate from a ChatGPT Plus
+subscription. A brand-new key starts at a $0 balance, so scanning fails with an
+`insufficient_quota` error (HTTP 429) until you top it up.
+
+1. Go to **[Billing](https://platform.openai.com/settings/organization/billing/overview)**
+   on the OpenAI platform (*Settings → Billing*).
+2. **Add a payment method**, then click **Add to credit balance**.
+3. Add a few dollars — at **~$0.01 per receipt**, $5 covers hundreds of scans.
+
+Usage is drawn from this balance per scan; you can watch it under *Billing → Usage*, and
+enable **auto-recharge** so you don't run dry mid-batch.
+
 ## Getting started (development)
 ```bash
 git clone https://github.com/kubiq/uctenkomat.git
