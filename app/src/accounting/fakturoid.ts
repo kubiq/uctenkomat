@@ -150,7 +150,16 @@ export const fakturoidProvider: AccountingProvider = {
     { key: "slug", label: "Account slug", placeholder: "from app.fakturoid.cz/<slug>/…" },
   ],
   check: async (c) => {
+    // getToken validates the Client ID/secret; account.json validates the slug
+    // (client-credentials auth itself ignores the slug, so a typo slips past it).
     await getToken(c);
+    if (!c.slug?.trim()) throw new Error("Account slug is empty");
+    try {
+      await api(c, "GET", "/account.json");
+    } catch (e: any) {
+      if (String(e?.message ?? "").includes("(404)")) throw new Error(`Account slug "${c.slug}" not found`);
+      throw e;
+    }
     return true;
   },
   searchSubjects,

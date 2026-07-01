@@ -64,16 +64,14 @@ export default function SettingsScreen({ initial, onChange, onClose }: Props) {
     try {
       const t = trimmed(s);
       const openaiOk = t.openaiApiKey ? await checkOpenAiKey(t.openaiApiKey) : false;
-      let providerOk = false;
+      let providerLine: string;
       try {
-        providerOk = await provider.check(providerCreds(t));
-      } catch {
-        providerOk = false;
+        await provider.check(providerCreds(t));
+        providerLine = `${provider.label}: ✓ ok`;
+      } catch (e: any) {
+        providerLine = `${provider.label}: ✗ ${e?.message ?? "failed"}`;
       }
-      showAlert(
-        "Connection test",
-        `OpenAI: ${openaiOk ? "✓ ok" : "✗ failed"}\n${provider.label}: ${providerOk ? "✓ ok" : "✗ failed"}`,
-      );
+      showAlert("Connection test", `OpenAI: ${openaiOk ? "✓ ok" : "✗ failed"}\n${providerLine}`);
     } catch (e: any) {
       showAlert("Test failed", e?.message ?? String(e));
     } finally {
