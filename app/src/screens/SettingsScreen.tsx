@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import Constants from "expo-constants";
 import { checkOpenAiKey } from "../openai";
 import { PROVIDERS, getProvider, providerCreds } from "../accounting";
 import { saveSettings } from "../storage";
@@ -126,6 +127,7 @@ export default function SettingsScreen({ initial, onChange, onClose }: Props) {
         <Text style={styles.secondaryText}>{testing ? "Testing…" : "Test connection"}</Text>
       </Pressable>
       <Text style={styles.savedNote}>Changes are saved automatically.</Text>
+      <Text style={styles.version}>Účtenkomat v{Constants.expoConfig?.version ?? "?"}</Text>
     </ScrollView>
   );
 }
@@ -178,4 +180,5 @@ const styles = StyleSheet.create({
   secondary: { marginTop: 24, paddingVertical: 14, borderRadius: 10, borderWidth: 1, borderColor: "#cbd5e1", alignItems: "center" },
   secondaryText: { color: "#334155", fontSize: 16, fontWeight: "500" },
   savedNote: { textAlign: "center", color: "#94a3b8", fontSize: 12, marginTop: 14 },
+  version: { textAlign: "center", color: "#cbd5e1", fontSize: 11, marginTop: 6 },
 });
