@@ -3,7 +3,7 @@
     "name": "Účtenkomat",
     "slug": "receipt2fakturoid",
     "scheme": "uctenkomat",
-    "version": "1.2.4",
+    "version": "1.2.5",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -24,7 +24,7 @@
     },
     "android": {
       "package": "cz.jakubpistek.receipt2fakturoid",
-      "versionCode": 13,
+      "versionCode": 14,
       "adaptiveIcon": {
         "backgroundColor": "#2563eb",
         "foregroundImage": "./assets/android-icon-foreground.png",
