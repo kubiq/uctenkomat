@@ -1,6 +1,6 @@
 {
   "name": "app",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Photograph a Czech store receipt and file it as an expense in Fakturoid",
   "author": "kubiq",
   "main": "index.ts",
