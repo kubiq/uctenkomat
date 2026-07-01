@@ -17,6 +17,7 @@ export type Receipt = {
   supplier_name: string | null;
   supplier_ico: string | null; // IČO
   supplier_dic: string | null; // DIČ
+  doc_number: string | null; // the receipt's own document number (Doklad / účtenka č.)
   date: string | null;
   currency: string | null;
   items: ReceiptItem[];

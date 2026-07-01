@@ -1,5 +1,5 @@
 import type { CreatedExpense, Receipt, Subject } from "../types";
-import type { AccountingProvider, Creds } from "./provider";
+import type { AccountingProvider, CreateExpenseOpts, Creds } from "./provider";
 
 // Hermes (RN 0.74+) provides btoa globally; declare it for TypeScript.
 declare const btoa: (data: string) => string;
@@ -101,11 +101,7 @@ async function findOrCreateSubject(
   return { id: created.id, name: created.name, matchedBy: "created", created: true };
 }
 
-async function createExpense(
-  c: Creds,
-  receipt: Receipt,
-  opts: { subjectId?: number; tags?: string[] },
-): Promise<CreatedExpense> {
+async function createExpense(c: Creds, receipt: Receipt, opts: CreateExpenseOpts): Promise<CreatedExpense> {
   const subject = opts.subjectId
     ? { id: opts.subjectId, name: undefined as string | undefined, matchedBy: "explicit", created: false }
     : await findOrCreateSubject(c, {
@@ -115,13 +111,21 @@ async function createExpense(
       });
 
   const tags = (opts.tags ?? []).map((t) => t.trim()).filter(Boolean);
+  // A receipt is issued and taxable on the document date; when it's paid at the
+  // till it's also due that day (align due_on too, avoiding Fakturoid's +14d
+  // default). For an unpaid invoice we leave due_on to Fakturoid's default.
+  const day = receipt.date || undefined;
   const payload = {
     subject_id: subject.id,
     document_type: "bill",
     vat_price_mode: "from_total_with_vat",
-    issued_on: receipt.date || undefined,
+    original_number: receipt.doc_number || undefined,
+    issued_on: day,
+    taxable_fulfillment_due: day,
+    ...(opts.markPaid ? { due_on: day } : {}),
     // Fakturoid expenses accept a plain string array of tags.
     ...(tags.length ? { tags } : {}),
+    ...(opts.attachment ? { attachments: [opts.attachment] } : {}),
     lines: receipt.items.map((item) => ({
       name: item.name,
       quantity: String(item.quantity ?? 1),
@@ -131,6 +135,17 @@ async function createExpense(
   };
 
   const expense = await api(c, "POST", "/expenses.json", payload);
+
+  // Mark paid on the due date (receipts are paid at the till). Best-effort: the
+  // expense already exists, so a payment hiccup shouldn't fail the whole flow.
+  if (opts.markPaid) {
+    try {
+      await api(c, "POST", `/expenses/${expense.id}/payments.json`, { paid_on: day });
+    } catch {
+      // leave it unpaid; the user can mark it in Fakturoid
+    }
+  }
+
   return {
     id: expense.id,
     number: expense.number ?? null,

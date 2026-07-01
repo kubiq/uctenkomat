@@ -7,6 +7,8 @@ export const RECEIPT_PROMPT = [
   "Extract every purchased line item with its name and prices.",
   "Also extract the supplier identifiers: IČO (label 'IČ'/'IČO', 8 digits) and",
   "DIČ (label 'DIČ', 'CZ' + digits), plus the legal company name next to the IČO.",
+  "Extract the document's own number into doc_number: the value printed after a label",
+  "like 'Doklad', 'Účtenka', 'Daňový doklad', 'Faktura' or 'č.' (copy it verbatim).",
   "Set 'merchant' to the seller's name: the printed store/trade name on a receipt,",
   "or on an invoice the supplier (dodavatel) company name — never leave it empty when a",
   "supplier is identifiable. Ignore the customer/buyer (odběratel) block.",
@@ -21,12 +23,13 @@ export const RECEIPT_PROMPT = [
 export const RECEIPT_JSON_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["merchant", "supplier_name", "supplier_ico", "supplier_dic", "date", "currency", "items", "vat_summary", "total"],
+  required: ["merchant", "supplier_name", "supplier_ico", "supplier_dic", "doc_number", "date", "currency", "items", "vat_summary", "total"],
   properties: {
     merchant: { type: ["string", "null"], description: "Seller name: receipt trade name, or invoice supplier (dodavatel) company name" },
     supplier_name: { type: ["string", "null"], description: "Legal company name next to the IČO" },
     supplier_ico: { type: ["string", "null"], description: "IČO, 8 digits, digits only" },
     supplier_dic: { type: ["string", "null"], description: "DIČ, usually 'CZ' + digits" },
+    doc_number: { type: ["string", "null"], description: "The document's own number (after 'Doklad'/'Účtenka'/'č.'), verbatim" },
     date: { type: ["string", "null"], description: "Purchase date, YYYY-MM-DD if possible" },
     currency: { type: ["string", "null"], description: "Currency code, e.g. CZK" },
     items: {

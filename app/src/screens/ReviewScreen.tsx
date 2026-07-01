@@ -16,6 +16,7 @@ import type { CreatedExpense, Receipt, Settings, Subject } from "../types";
 type Props = {
   settings: Settings;
   initial: Receipt;
+  attachment?: { data_url: string; filename?: string } | null;
   recentTags?: string[];
   onUsedTags?: (tags: string[]) => void;
   onDone: (expense: CreatedExpense) => void;
@@ -30,7 +31,15 @@ function num(v: string): number | null {
   return Number.isNaN(n) ? null : n;
 }
 
-export default function ReviewScreen({ settings, initial, recentTags = [], onUsedTags, onDone, onBack }: Props) {
+export default function ReviewScreen({
+  settings,
+  initial,
+  attachment,
+  recentTags = [],
+  onUsedTags,
+  onDone,
+  onBack,
+}: Props) {
   // Fall back to the supplier name when no merchant/trade name was extracted (e.g. invoices).
   const [receipt, setReceipt] = useState<Receipt>(() => ({
     ...initial,
@@ -42,6 +51,7 @@ export default function ReviewScreen({ settings, initial, recentTags = [], onUse
   const [showSearch, setShowSearch] = useState(false);
   const [searching, setSearching] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [markPaid, setMarkPaid] = useState(true); // receipts are paid at the till
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
 
@@ -111,7 +121,12 @@ export default function ReviewScreen({ settings, initial, recentTags = [], onUse
     try {
       // Omit subjectId -> resolve by IČO/DIČ/name; include it only when overriding.
       const cleanTags = provider.supportsTags ? tags : [];
-      const expense = await provider.createExpense(creds, receipt, { subjectId: override?.id, tags: cleanTags });
+      const expense = await provider.createExpense(creds, receipt, {
+        subjectId: override?.id,
+        tags: cleanTags,
+        attachment: attachment ?? undefined,
+        markPaid,
+      });
       if (cleanTags.length) onUsedTags?.(cleanTags);
       onDone(expense);
     } catch (e: any) {
@@ -148,6 +163,13 @@ export default function ReviewScreen({ settings, initial, recentTags = [], onUse
         value={receipt.date ?? ""}
         onChangeText={(t) => setReceipt((r) => ({ ...r, date: t }))}
         placeholder="2026-06-10"
+      />
+      <Text style={styles.label}>Document no.</Text>
+      <TextInput
+        style={styles.input}
+        value={receipt.doc_number ?? ""}
+        onChangeText={(t) => setReceipt((r) => ({ ...r, doc_number: t }))}
+        placeholder="from the receipt"
       />
 
       {/* Supplier — auto by IČO, with manual override */}
@@ -271,6 +293,13 @@ export default function ReviewScreen({ settings, initial, recentTags = [], onUse
         </>
       )}
 
+      {/* Options */}
+      <Pressable style={styles.toggleRow} onPress={() => setMarkPaid((v) => !v)} hitSlop={6}>
+        <View style={[styles.checkbox, markPaid && styles.checkboxOn]}>{markPaid && <Text style={styles.checkboxTick}>✓</Text>}</View>
+        <Text style={styles.toggleLabel}>Mark as paid (on the document date)</Text>
+      </Pressable>
+      {attachment && <Text style={styles.muted}>📎 The receipt file will be attached to the expense.</Text>}
+
       <Pressable style={styles.submit} onPress={submit} disabled={submitting}>
         {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>Create expense in {provider.label}</Text>}
       </Pressable>
@@ -334,4 +363,9 @@ const styles = StyleSheet.create({
   tagSuggestText: { color: "#475569" },
   submit: { backgroundColor: "#16a34a", borderRadius: 12, paddingVertical: 16, alignItems: "center", marginTop: 28 },
   submitText: { color: "#fff", fontSize: 17, fontWeight: "700" },
+  toggleRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 24 },
+  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1.5, borderColor: "#cbd5e1", alignItems: "center", justifyContent: "center" },
+  checkboxOn: { backgroundColor: "#16a34a", borderColor: "#16a34a" },
+  checkboxTick: { color: "#fff", fontSize: 14, fontWeight: "800" },
+  toggleLabel: { fontSize: 15, color: "#0f172a" },
 });

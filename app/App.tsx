@@ -19,6 +19,8 @@ export default function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [screen, setScreen] = useState<Screen>("capture");
   const [receipt, setReceipt] = useState<Receipt | null>(null);
+  // The current file as a data URL, to attach to the created expense.
+  const [source, setSource] = useState<{ data_url: string; filename: string } | null>(null);
   const [queue, setQueue] = useState<PickedFile[]>([]);
   const [busyMsg, setBusyMsg] = useState("Reading the receipt…");
   const [summary, setSummary] = useState<{ count: number; last: CreatedExpense | null }>({ count: 0, last: null });
@@ -67,6 +69,11 @@ export default function App() {
       const file = files[0];
       const base64 = file.isPdf ? await readPdfBase64(file) : await prepareImageBase64(file.uri);
       const parsed = await parseReceipt(current, base64, file.isPdf);
+      const mime = file.isPdf ? "application/pdf" : "image/jpeg";
+      setSource({
+        data_url: `data:${mime};base64,${base64}`,
+        filename: file.name || (file.isPdf ? "receipt.pdf" : "receipt.jpg"),
+      });
       setReceipt(parsed);
       setScreen("review");
     } catch (e: any) {
@@ -128,6 +135,7 @@ export default function App() {
         <ReviewScreen
           settings={settings}
           initial={receipt}
+          attachment={source}
           recentTags={settings.recentTags ?? []}
           onUsedTags={rememberTags}
           onBack={() => processQueue(queue.slice(1), settings)} // skip this one, continue queue

@@ -12,6 +12,16 @@ export type CredentialField = {
 // A flat per-provider credentials object: { [field.key]: value }.
 export type Creds = Record<string, string>;
 
+// Options for createExpense. Providers ignore fields they don't support.
+export type CreateExpenseOpts = {
+  subjectId?: number;
+  tags?: string[];
+  /** Original receipt file to attach to the expense (data URL + name). */
+  attachment?: { data_url: string; filename?: string };
+  /** Mark the expense as paid (paid on its issue date). */
+  markPaid?: boolean;
+};
+
 export interface AccountingProvider {
   id: ProviderId;
   label: string;
@@ -33,9 +43,5 @@ export interface AccountingProvider {
    * from the receipt's IČO (create it if missing). opts.tags is honoured only
    * when supportsTags is true; other providers ignore it.
    */
-  createExpense(
-    creds: Creds,
-    receipt: Receipt,
-    opts: { subjectId?: number; tags?: string[] },
-  ): Promise<CreatedExpense>;
+  createExpense(creds: Creds, receipt: Receipt, opts: CreateExpenseOpts): Promise<CreatedExpense>;
 }

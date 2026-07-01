@@ -1,5 +1,5 @@
 import type { CreatedExpense, Receipt, Subject } from "../types";
-import type { AccountingProvider, Creds } from "./provider";
+import type { AccountingProvider, CreateExpenseOpts, Creds } from "./provider";
 
 // iDoklad API v3. Auth is OAuth2 client-credentials against IdentityServer.
 const TOKEN_URL = "https://identity.idoklad.cz/server/connect/token";
@@ -135,13 +135,9 @@ function isoDate(date: string | null): string | undefined {
   return /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T00:00:00` : undefined;
 }
 
-// Tags are accepted in opts for interface parity but not yet sent to iDoklad
-// (its ReceivedInvoice uses tag IDs that need a separate lookup/create step).
-async function createExpense(
-  c: Creds,
-  receipt: Receipt,
-  opts: { subjectId?: number; tags?: string[] },
-): Promise<CreatedExpense> {
+// tags / attachment / markPaid are accepted for interface parity but not yet sent
+// to iDoklad (its ReceivedInvoice needs separate lookup/create steps for those).
+async function createExpense(c: Creds, receipt: Receipt, opts: CreateExpenseOpts): Promise<CreatedExpense> {
   const subject = opts.subjectId
     ? { id: opts.subjectId, name: undefined as string | undefined, matchedBy: "explicit", created: false }
     : await findOrCreateContact(c, {
