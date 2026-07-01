@@ -7,15 +7,31 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "Existing release tag to attach the builds to"
+        description: "Release tag to attach the builds to (created if missing)"
         required: true
         default: "v1.0.0"
 
 permissions:
   contents: write
 
+env:
+  TAG: ${{ github.event.inputs.release_tag || github.ref_name }}
+
 jobs:
+  # Ensure the GitHub Release exists before the matrix uploads to it. Runs once
+  # (not per-OS) so the three build jobs don't race to create the same release.
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure the release exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" \
+            || gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "$TAG" --generate-notes --verify-tag
+
   build:
+    needs: create-release
     strategy:
       fail-fast: false
       matrix:
@@ -27,10 +43,6 @@ jobs:
           - os: macos-latest
             pattern: "app/electron-dist/*.dmg"
     runs-on: ${{ matrix.os }}
-    env:
-      # No code-signing certs. macOS is ad-hoc signed in app/electron/afterPack.cjs;
-      # Windows/Linux ship unsigned.
-      TAG: ${{ github.event.inputs.release_tag || github.ref_name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -48,6 +60,8 @@ jobs:
         working-directory: app
         run: npx expo export -p web
 
+      # No code-signing certs. macOS is ad-hoc signed in app/electron/afterPack.cjs;
+      # Windows/Linux ship unsigned.
       - name: Build desktop installer
         working-directory: app
         run: npx electron-builder --publish never
@@ -56,4 +70,4 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release upload "$TAG" ${{ matrix.pattern }} --clobber --repo "${{ github.repository }}"
+        run: gh release upload "$TAG" ${{ matrix.pattern }} --clobber --repo "$GITHUB_REPOSITORY"
