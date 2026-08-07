@@ -13,6 +13,7 @@ import { getProvider, providerCreds } from "../accounting";
 import { useKeyboardHeight } from "../keyboard";
 import { showAlert, confirmDialog } from "../ui";
 import { useI18n } from "../i18n";
+import { vatDeductionAtRisk, SIMPLIFIED_DOC_LIMIT_CZK } from "../vat";
 import type { CreatedExpense, Receipt, Settings, Subject } from "../types";
 
 type Props = {
@@ -155,6 +156,14 @@ export default function ReviewScreen({
         markPaid,
       });
       if (cleanTags.length) onUsedTags?.(cleanTags);
+      // Warn once the expense exists: a receipt over the simplified-document limit
+      // without your IČO/DIČ on it isn't valid for VAT deduction.
+      if (vatDeductionAtRisk(receipt, { ico: settings.ico, vatId: settings.vatId })) {
+        showAlert(
+          t("alerts.vatRiskTitle"),
+          t("alerts.vatRiskMsg", { limit: SIMPLIFIED_DOC_LIMIT_CZK.toLocaleString("cs-CZ") }),
+        );
+      }
       onDone(expense);
     } catch (e: any) {
       showAlert(t("alerts.createFailedTitle"), e?.message ?? String(e));

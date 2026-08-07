@@ -3,7 +3,7 @@ import * as SecureStore from "expo-secure-store";
 import type { Settings } from "./types";
 
 const STORAGE_KEY = "settings_v2";
-const DEFAULTS: Settings = { openaiApiKey: "", provider: "fakturoid", creds: {}, recentTags: [], language: "system" };
+const DEFAULTS: Settings = { openaiApiKey: "", provider: "fakturoid", creds: {}, recentTags: [], language: "system", ico: "", vatId: "" };
 
 const isWeb = Platform.OS === "web";
 

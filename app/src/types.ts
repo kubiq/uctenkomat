@@ -17,6 +17,8 @@ export type Receipt = {
   supplier_name: string | null;
   supplier_ico: string | null; // IČO
   supplier_dic: string | null; // DIČ
+  buyer_ico: string | null; // buyer's (odběratel) IČO printed on the receipt, if any
+  buyer_dic: string | null; // buyer's (odběratel) DIČ printed on the receipt, if any
   doc_number: string | null; // the receipt's own document number (Doklad / účtenka č.)
   date: string | null;
   currency: string | null;
@@ -63,4 +65,7 @@ export type Settings = {
   creds: Record<string, string>;
   recentTags?: string[]; // recently used expense tags, most-recent first (for quick re-add)
   language?: LanguagePref; // UI language; "system" (default) follows the device locale
+  // Your own company identifiers, checked against receipts over the simplified-document limit.
+  ico?: string; // your IČO
+  vatId?: string; // your DIČ
 };

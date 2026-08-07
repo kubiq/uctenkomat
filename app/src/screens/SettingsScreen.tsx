@@ -26,6 +26,8 @@ function trimmed(s: Settings): Settings {
   return {
     ...s,
     openaiApiKey: s.openaiApiKey.trim(),
+    ico: (s.ico ?? "").trim(),
+    vatId: (s.vatId ?? "").trim(),
     creds: Object.fromEntries(Object.entries(s.creds).map(([k, v]) => [k, (v ?? "").trim()])),
   };
 }
@@ -57,6 +59,8 @@ export default function SettingsScreen({ initial, onChange, onClose }: Props) {
   }, [s]);
 
   const setOpenAi = (v: string) => setS((p) => ({ ...p, openaiApiKey: v }));
+  const setIco = (v: string) => setS((p) => ({ ...p, ico: v }));
+  const setVatId = (v: string) => setS((p) => ({ ...p, vatId: v }));
   const setProvider = (id: ProviderId) => setS((p) => ({ ...p, provider: id }));
   // Apply the language immediately (bypass the debounce) so the UI re-translates now.
   const setLanguage = (language: LanguagePref) => {
@@ -144,6 +148,11 @@ export default function SettingsScreen({ initial, onChange, onClose }: Props) {
       <Pressable style={styles.secondary} onPress={test} disabled={testing}>
         <Text style={styles.secondaryText}>{testing ? t("settings.testing") : t("settings.test")}</Text>
       </Pressable>
+
+      <Text style={styles.group}>{t("settings.vat")}</Text>
+      <Field label={t("settings.ico")} value={s.ico ?? ""} onChange={setIco} placeholder={t("settings.icoPlaceholder")} />
+      <Field label={t("settings.vatId")} value={s.vatId ?? ""} onChange={setVatId} placeholder={t("settings.vatIdPlaceholder")} />
+      <Text style={styles.hint}>{t("settings.vatHint")}</Text>
 
       <Text style={styles.group}>{t("settings.language")}</Text>
       <View style={styles.langRow}>
