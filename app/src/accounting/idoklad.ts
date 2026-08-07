@@ -123,24 +123,37 @@ async function findContactByDic(c: Creds, dic: string): Promise<Subject | null> 
   return hit ?? null;
 }
 
-async function findOrCreateContact(
+type Supplier = { ico: string | null; dic: string | null; name: string | null };
+
+// Look up an existing contact without creating one. Precise identifiers first
+// (IČO, then DIČ), then a fuzzy name match. Returns null when nothing matches.
+async function findContact(
   c: Creds,
-  supplier: { ico: string | null; dic: string | null; name: string | null },
-): Promise<{ id: number; name: string; matchedBy: string; created: boolean }> {
+  supplier: Supplier,
+): Promise<{ id: number; name: string; matchedBy: string } | null> {
   const icoDigits = onlyDigits(supplier.ico);
-  // Precise identifiers first (IČO, then DIČ), then a fuzzy name match.
   if (icoDigits) {
     const hit = await findContactByIco(c, icoDigits);
-    if (hit) return { id: hit.id, name: hit.name, matchedBy: "ico", created: false };
+    if (hit) return { id: hit.id, name: hit.name, matchedBy: "ico" };
   }
   if (supplier.dic) {
     const hit = await findContactByDic(c, supplier.dic);
-    if (hit) return { id: hit.id, name: hit.name, matchedBy: "dic", created: false };
+    if (hit) return { id: hit.id, name: hit.name, matchedBy: "dic" };
   }
   if (supplier.name) {
     const first = (await searchSubjects(c, supplier.name))[0];
-    if (first) return { id: first.id, name: first.name, matchedBy: "name", created: false };
+    if (first) return { id: first.id, name: first.name, matchedBy: "name" };
   }
+  return null;
+}
+
+async function findOrCreateContact(
+  c: Creds,
+  supplier: Supplier,
+): Promise<{ id: number; name: string; matchedBy: string; created: boolean }> {
+  const existing = await findContact(c, supplier);
+  if (existing) return { ...existing, created: false };
+  const icoDigits = onlyDigits(supplier.ico);
   const name = supplier.name || (icoDigits ? `Supplier ${icoDigits}` : "");
   if (!name) throw new Error("Cannot resolve supplier: no IČO/DIČ match and no name to create one.");
   // Start from the default contact model so required fields (e.g. CountryId) are set.
@@ -200,6 +213,41 @@ async function createExpense(c: Creds, receipt: Receipt, opts: CreateExpenseOpts
   };
 }
 
+// Gross total of a received invoice, tolerating where iDoklad puts it.
+function grossTotal(e: any): number | null {
+  const candidates = [e?.Prices?.TotalWithVat, e?.TotalWithVat, e?.Prices?.TotalWithVatHc, e?.TotalWithVatHc];
+  for (const v of candidates) if (typeof v === "number") return v;
+  return null;
+}
+
+// Detect a receipt already entered in iDoklad. Since createExpense doesn't store
+// the supplier's document number on the received invoice, match within the
+// resolved partner on issue date + gross total (the "just scanned it again"
+// case). Only the first page of the partner's invoices is checked.
+async function findDuplicate(c: Creds, receipt: Receipt): Promise<CreatedExpense | null> {
+  if (receipt.date == null || receipt.total == null) return null; // nothing reliable to match on
+  const contact = await findContact(c, {
+    ico: receipt.supplier_ico,
+    dic: receipt.supplier_dic,
+    name: receipt.supplier_name || receipt.merchant,
+  });
+  if (!contact) return null;
+
+  const q = encodeURIComponent(`PartnerId~eq~${contact.id}`);
+  const json = await api(c, "GET", `/ReceivedInvoices?filter=${q}&pageSize=50`);
+  const match = items(json).find((e: any) => {
+    const total = grossTotal(e);
+    return String(e.DateOfIssue ?? "").slice(0, 10) === receipt.date && total != null && Math.abs(total - receipt.total!) < 0.5;
+  });
+  if (!match) return null;
+  return {
+    id: match.Id,
+    number: match.DocumentNumber ?? null,
+    url: null, // iDoklad has no stable public deep-link we can rely on
+    subject: { id: contact.id, name: contact.name },
+  };
+}
+
 export const idokladProvider: AccountingProvider = {
   id: "idoklad",
   label: "iDoklad",
@@ -215,4 +263,5 @@ export const idokladProvider: AccountingProvider = {
   },
   searchSubjects,
   createExpense,
+  findDuplicate,
 };
