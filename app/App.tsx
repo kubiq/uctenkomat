@@ -8,20 +8,21 @@ import { parseReceipt } from "./src/openai";
 import { isConfigured } from "./src/accounting";
 import { showAlert } from "./src/ui";
 import { I18nProvider, resolveLanguage, t } from "./src/i18n";
-import type { CreatedExpense, PickedFile, Receipt, Settings } from "./src/types";
+import type { Attachment, CreatedExpense, PickedFile, Receipt, Settings } from "./src/types";
 import CaptureScreen from "./src/screens/CaptureScreen";
+import MultiPageScreen from "./src/screens/MultiPageScreen";
 import ReviewScreen from "./src/screens/ReviewScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import SuccessScreen from "./src/screens/SuccessScreen";
 
-type Screen = "capture" | "busy" | "review" | "settings" | "done";
+type Screen = "capture" | "multipage" | "busy" | "review" | "settings" | "done";
 
 export default function App() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [screen, setScreen] = useState<Screen>("capture");
   const [receipt, setReceipt] = useState<Receipt | null>(null);
-  // The current file as a data URL, to attach to the created expense.
-  const [source, setSource] = useState<{ data_url: string; filename: string } | null>(null);
+  // The current file (one per page) as data URLs, to attach to the created expense.
+  const [sources, setSources] = useState<Attachment[]>([]);
   const [queue, setQueue] = useState<PickedFile[]>([]);
   const [busyMsg, setBusyMsg] = useState(() => t("busy.reading"));
   const [summary, setSummary] = useState<{ count: number; last: CreatedExpense | null }>({ count: 0, last: null });
@@ -68,13 +69,22 @@ export default function App() {
     setScreen("busy");
     try {
       const file = files[0];
-      const base64 = file.isPdf ? await readPdfBase64(file) : await prepareImageBase64(file.uri);
-      const parsed = await parseReceipt(current, base64, file.isPdf);
-      const mime = file.isPdf ? "application/pdf" : "image/jpeg";
-      setSource({
-        data_url: `data:${mime};base64,${base64}`,
-        filename: file.name || (file.isPdf ? "receipt.pdf" : "receipt.jpg"),
-      });
+      let parsed: Receipt;
+      if (file.isPdf) {
+        const base64 = await readPdfBase64(file);
+        parsed = await parseReceipt(current, base64, true);
+        setSources([{ data_url: `data:application/pdf;base64,${base64}`, filename: file.name || "receipt.pdf" }]);
+      } else {
+        // A long receipt shot in parts: every page goes to the model and is attached.
+        const pages = await Promise.all((file.pages ?? [file.uri]).map(prepareImageBase64));
+        parsed = await parseReceipt(current, pages);
+        setSources(
+          pages.map((b, i) => ({
+            data_url: `data:image/jpeg;base64,${b}`,
+            filename: pages.length > 1 ? `receipt-${i + 1}.jpg` : file.name || "receipt.jpg",
+          })),
+        );
+      }
       setReceipt(parsed);
       setScreen("review");
     } catch (e: any) {
@@ -123,7 +133,16 @@ export default function App() {
       <StatusBar style="dark" />
       <View style={styles.card}>
       {screen === "capture" && (
-        <CaptureScreen settings={settings} onSelected={startBatch} onOpenSettings={() => setScreen("settings")} />
+        <CaptureScreen
+          settings={settings}
+          onSelected={startBatch}
+          onMultiPage={() => setScreen("multipage")}
+          onOpenSettings={() => setScreen("settings")}
+        />
+      )}
+
+      {screen === "multipage" && (
+        <MultiPageScreen onDone={(file) => startBatch([file])} onBack={() => setScreen("capture")} />
       )}
 
       {screen === "busy" && (
@@ -137,7 +156,7 @@ export default function App() {
         <ReviewScreen
           settings={settings}
           initial={receipt}
-          attachment={source}
+          attachments={sources}
           recentTags={settings.recentTags ?? []}
           onUsedTags={rememberTags}
           onBack={() => processQueue(queue.slice(1), settings)} // skip this one, continue queue

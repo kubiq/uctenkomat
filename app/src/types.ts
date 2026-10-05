@@ -29,12 +29,18 @@ export type Receipt = {
 
 // A receipt source picked by the user: an image (camera/gallery) or a PDF.
 // `base64` is pre-read on web by the document picker; native reads it lazily.
+// `pages` holds every photo of a long receipt shot in parts (top to bottom);
+// `uri` is then its first page.
 export type PickedFile = {
   uri: string;
   isPdf: boolean;
   base64?: string;
   name?: string;
+  pages?: string[];
 };
+
+// A file attached to the created expense (data URL + name).
+export type Attachment = { data_url: string; filename?: string };
 
 export type Subject = {
   id: number;

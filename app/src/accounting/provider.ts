@@ -1,4 +1,4 @@
-import type { CreatedExpense, ProviderId, Receipt, Subject } from "../types";
+import type { Attachment, CreatedExpense, ProviderId, Receipt, Subject } from "../types";
 
 // One credential input the Settings screen renders for a provider.
 // `label` and `placeholder` are i18n keys, translated by SettingsScreen.
@@ -17,8 +17,8 @@ export type Creds = Record<string, string>;
 export type CreateExpenseOpts = {
   subjectId?: number;
   tags?: string[];
-  /** Original receipt file to attach to the expense (data URL + name). */
-  attachment?: { data_url: string; filename?: string };
+  /** Original receipt file(s) to attach — one per page of a multi-photo receipt. */
+  attachments?: Attachment[];
   /** Mark the expense as paid (paid on its issue date). */
   markPaid?: boolean;
 };

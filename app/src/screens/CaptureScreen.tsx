@@ -1,8 +1,8 @@
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import { isConfigured } from "../accounting";
+import { capturePhoto, pickImageUris } from "../pickers";
 import { showAlert } from "../ui";
 import { useI18n } from "../i18n";
 import type { PickedFile, Settings } from "../types";
@@ -10,12 +10,13 @@ import type { PickedFile, Settings } from "../types";
 type Props = {
   settings: Settings;
   onSelected: (files: PickedFile[]) => void;
+  onMultiPage: () => void;
   onOpenSettings: () => void;
 };
 
 const isWeb = Platform.OS === "web";
 
-export default function CaptureScreen({ settings, onSelected, onOpenSettings }: Props) {
+export default function CaptureScreen({ settings, onSelected, onMultiPage, onOpenSettings }: Props) {
   const { t } = useI18n();
   const needsSettings = !isConfigured(settings);
 
@@ -29,26 +30,14 @@ export default function CaptureScreen({ settings, onSelected, onOpenSettings }: 
 
   async function takePhoto() {
     if (!guard()) return;
-    const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) return showAlert(t("alerts.permissionDeniedTitle"), t("alerts.cameraDenied"));
-    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 1 });
-    if (!result.canceled && result.assets?.length)
-      onSelected(result.assets.map((a) => ({ uri: a.uri, isPdf: false })));
+    const uri = await capturePhoto();
+    if (uri) onSelected([{ uri, isPdf: false }]);
   }
 
   async function pickImages() {
     if (!guard()) return;
-    if (!isWeb) {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) return showAlert(t("alerts.permissionDeniedTitle"), t("alerts.photosDenied"));
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      quality: 1,
-      allowsMultipleSelection: isWeb,
-    });
-    if (!result.canceled && result.assets?.length)
-      onSelected(result.assets.map((a) => ({ uri: a.uri, isPdf: false })));
+    const uris = await pickImageUris(isWeb);
+    if (uris.length) onSelected(uris.map((uri) => ({ uri, isPdf: false })));
   }
 
   async function pickPdfs() {
@@ -61,6 +50,10 @@ export default function CaptureScreen({ settings, onSelected, onOpenSettings }: 
     });
     if (!result.canceled && result.assets?.length)
       onSelected(result.assets.map((a) => ({ uri: a.uri, isPdf: true, base64: a.base64, name: a.name })));
+  }
+
+  function multiPage() {
+    if (guard()) onMultiPage();
   }
 
   return (
@@ -82,6 +75,9 @@ export default function CaptureScreen({ settings, onSelected, onOpenSettings }: 
           <Text style={isWeb ? styles.primaryText : styles.secondaryText}>
             {isWeb ? t("capture.selectImages") : t("capture.pickGallery")}
           </Text>
+        </Pressable>
+        <Pressable style={styles.secondary} onPress={multiPage}>
+          <Text style={styles.secondaryText}>{t("capture.multiPage")}</Text>
         </Pressable>
         <Pressable style={styles.secondary} onPress={pickPdfs}>
           <Text style={styles.secondaryText}>{t("capture.selectPdf")}</Text>

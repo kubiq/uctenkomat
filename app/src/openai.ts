@@ -14,14 +14,22 @@ export async function checkOpenAiKey(apiKey: string): Promise<boolean> {
 
 /**
  * Parse a receipt into structured JSON via OpenAI vision + Structured Outputs.
- * Accepts a base64 JPEG (default) or, when `isPdf` is true, a base64 PDF — gpt-4o
- * reads both the text and page images of the PDF. Runs entirely on-device with
- * the user's own key.
+ * Accepts a base64 JPEG (default), several base64 JPEGs (consecutive photos of
+ * one long receipt) or, when `isPdf` is true, a base64 PDF — gpt-4o reads both
+ * the text and page images of the PDF. Runs entirely on-device with the user's
+ * own key.
  */
-export async function parseReceipt(settings: Settings, base64: string, isPdf = false): Promise<Receipt> {
-  const source = isPdf
-    ? { type: "file", file: { filename: "receipt.pdf", file_data: `data:application/pdf;base64,${base64}` } }
-    : { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64}` } };
+export async function parseReceipt(settings: Settings, base64: string | string[], isPdf = false): Promise<Receipt> {
+  const pages = Array.isArray(base64) ? base64 : [base64];
+  const sources = isPdf
+    ? [{ type: "file", file: { filename: "receipt.pdf", file_data: `data:application/pdf;base64,${pages[0]}` } }]
+    : pages.map((b) => ({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${b}` } }));
+  const instruction =
+    pages.length > 1
+      ? `These ${pages.length} images are consecutive photos of ONE long receipt, in order from top to bottom. ` +
+        "Neighbouring photos may overlap: a line visible at the bottom of one photo and the top of the next " +
+        "is the same line — include it only once. Extract the purchased line items and their prices."
+      : "Extract the purchased line items and their prices.";
   const body = {
     model: OPENAI_MODEL,
     messages: [
@@ -29,8 +37,8 @@ export async function parseReceipt(settings: Settings, base64: string, isPdf = f
       {
         role: "user",
         content: [
-          { type: "text", text: "Extract the purchased line items and their prices." },
-          source,
+          { type: "text", text: instruction },
+          ...sources,
         ],
       },
     ],

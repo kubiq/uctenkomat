@@ -175,7 +175,7 @@ function isoDate(date: string | null): string | undefined {
   return /^\d{4}-\d{2}-\d{2}$/.test(date) ? `${date}T00:00:00` : undefined;
 }
 
-// tags / attachment / markPaid are accepted for interface parity but not yet sent
+// tags / attachments / markPaid are accepted for interface parity but not yet sent
 // to iDoklad (its ReceivedInvoice needs separate lookup/create steps for those).
 async function createExpense(c: Creds, receipt: Receipt, opts: CreateExpenseOpts): Promise<CreatedExpense> {
   const subject = opts.subjectId

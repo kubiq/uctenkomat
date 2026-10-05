@@ -187,7 +187,7 @@ async function createExpense(c: Creds, receipt: Receipt, opts: CreateExpenseOpts
     ...(opts.markPaid ? { due_on: day } : {}),
     // Fakturoid expenses accept a plain string array of tags.
     ...(tags.length ? { tags } : {}),
-    ...(opts.attachment ? { attachments: [opts.attachment] } : {}),
+    ...(opts.attachments?.length ? { attachments: opts.attachments } : {}),
     lines: receipt.items.map((item) => ({
       name: item.name,
       quantity: String(item.quantity ?? 1),

@@ -14,12 +14,12 @@ import { useKeyboardHeight } from "../keyboard";
 import { showAlert, confirmDialog } from "../ui";
 import { useI18n } from "../i18n";
 import { vatDeductionAtRisk, SIMPLIFIED_DOC_LIMIT_CZK } from "../vat";
-import type { CreatedExpense, Receipt, Settings, Subject } from "../types";
+import type { Attachment, CreatedExpense, Receipt, Settings, Subject } from "../types";
 
 type Props = {
   settings: Settings;
   initial: Receipt;
-  attachment?: { data_url: string; filename?: string } | null;
+  attachments?: Attachment[];
   recentTags?: string[];
   onUsedTags?: (tags: string[]) => void;
   onDone: (expense: CreatedExpense) => void;
@@ -37,7 +37,7 @@ function num(v: string): number | null {
 export default function ReviewScreen({
   settings,
   initial,
-  attachment,
+  attachments = [],
   recentTags = [],
   onUsedTags,
   onDone,
@@ -152,7 +152,7 @@ export default function ReviewScreen({
       const expense = await provider.createExpense(creds, receipt, {
         subjectId: override?.id,
         tags: cleanTags,
-        attachment: attachment ?? undefined,
+        attachments,
         markPaid,
       });
       if (cleanTags.length) onUsedTags?.(cleanTags);
@@ -345,7 +345,9 @@ export default function ReviewScreen({
         <View style={[styles.checkbox, markPaid && styles.checkboxOn]}>{markPaid && <Text style={styles.checkboxTick}>✓</Text>}</View>
         <Text style={styles.toggleLabel}>{t("review.markPaid")}</Text>
       </Pressable>
-      {attachment && <Text style={styles.muted}>{t("review.attachmentNote")}</Text>}
+      {attachments.length > 0 && (
+        <Text style={styles.muted}>{t("review.attachmentNote", { count: attachments.length })}</Text>
+      )}
 
       <Pressable style={styles.submit} onPress={submit} disabled={submitting}>
         {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>{t("review.createExpense", { provider: provider.label })}</Text>}
