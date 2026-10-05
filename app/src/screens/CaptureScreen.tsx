@@ -66,22 +66,24 @@ export default function CaptureScreen({ settings, onSelected, onMultiPage, onOpe
       </View>
 
       <View style={styles.center}>
-        {!isWeb && (
-          <Pressable style={styles.primary} onPress={takePhoto}>
-            <Text style={styles.primaryText}>{t("capture.takePhoto")}</Text>
+        <View style={styles.buttons}>
+          {!isWeb && (
+            <Pressable style={styles.primary} onPress={takePhoto}>
+              <Text style={styles.primaryText}>{t("capture.takePhoto")}</Text>
+            </Pressable>
+          )}
+          <Pressable style={isWeb ? styles.primary : styles.secondary} onPress={pickImages}>
+            <Text style={isWeb ? styles.primaryText : styles.secondaryText}>
+              {isWeb ? t("capture.selectImages") : t("capture.pickGallery")}
+            </Text>
           </Pressable>
-        )}
-        <Pressable style={isWeb ? styles.primary : styles.secondary} onPress={pickImages}>
-          <Text style={isWeb ? styles.primaryText : styles.secondaryText}>
-            {isWeb ? t("capture.selectImages") : t("capture.pickGallery")}
-          </Text>
-        </Pressable>
-        <Pressable style={styles.secondary} onPress={multiPage}>
-          <Text style={styles.secondaryText}>{t("capture.multiPage")}</Text>
-        </Pressable>
-        <Pressable style={styles.secondary} onPress={pickPdfs}>
-          <Text style={styles.secondaryText}>{t("capture.selectPdf")}</Text>
-        </Pressable>
+          <Pressable style={styles.secondary} onPress={multiPage}>
+            <Text style={styles.secondaryText}>{t("capture.multiPage")}</Text>
+          </Pressable>
+          <Pressable style={styles.secondary} onPress={pickPdfs}>
+            <Text style={styles.secondaryText}>{t("capture.selectPdf")}</Text>
+          </Pressable>
+        </View>
         {isWeb && <Text style={styles.muted}>{t("capture.multiHint")}</Text>}
         {needsSettings && <Text style={styles.warn}>{t("capture.setKeysHint")}</Text>}
       </View>
@@ -95,10 +97,12 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: "800", color: "#fff" },
   gear: { fontSize: 24, color: "#fff" },
   center: { flex: 1, justifyContent: "center", alignItems: "center", gap: 16 },
-  primary: { backgroundColor: "#fff", paddingVertical: 16, paddingHorizontal: 40, borderRadius: 12, shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
-  primaryText: { color: "#1d4ed8", fontSize: 18, fontWeight: "700" },
-  secondary: { paddingVertical: 14, paddingHorizontal: 40, borderRadius: 12, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.7)" },
-  secondaryText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  // One fixed-width column so every button lines up regardless of label length.
+  buttons: { width: "100%", maxWidth: 320, gap: 14 },
+  primary: { minHeight: 58, justifyContent: "center", alignItems: "center", paddingHorizontal: 20, backgroundColor: "#fff", borderRadius: 12, shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 3 },
+  primaryText: { color: "#1d4ed8", fontSize: 18, fontWeight: "700", textAlign: "center" },
+  secondary: { minHeight: 52, justifyContent: "center", alignItems: "center", paddingHorizontal: 20, borderRadius: 12, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.7)" },
+  secondaryText: { color: "#fff", fontSize: 16, fontWeight: "600", textAlign: "center" },
   muted: { color: "rgba(255,255,255,0.85)", textAlign: "center", maxWidth: 360 },
   warn: { color: "#fde68a", marginTop: 8, fontWeight: "600" },
 });
