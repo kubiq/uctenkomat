@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { getProvider, providerCreds } from "../accounting";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useKeyboardHeight } from "../keyboard";
 import { showAlert, confirmDialog } from "../ui";
 import { useI18n } from "../i18n";
@@ -79,6 +80,7 @@ export default function ReviewScreen({
   const provider = getProvider(settings.provider);
   const creds = providerCreds(settings);
   const kb = useKeyboardHeight();
+  const insets = useSafeAreaInsets();
 
   // On open, check whether this receipt is already saved (best-effort; a failure
   // just skips the warning). Runs once — the identifiers come from the parse.
@@ -175,7 +177,8 @@ export default function ReviewScreen({
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, { paddingBottom: 24 + kb }]}
+      // Clear the keyboard when open, else the Android navigation bar (edge-to-edge).
+      contentContainerStyle={[styles.content, { paddingBottom: 24 + (kb || insets.bottom) }]}
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.headerRow}>

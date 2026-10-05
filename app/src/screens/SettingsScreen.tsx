@@ -4,6 +4,7 @@ import Constants from "expo-constants";
 import { checkOpenAiKey } from "../openai";
 import { PROVIDERS, getProvider, providerCreds } from "../accounting";
 import { saveSettings } from "../storage";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useKeyboardHeight } from "../keyboard";
 import { showAlert } from "../ui";
 import { useI18n } from "../i18n";
@@ -40,6 +41,7 @@ export default function SettingsScreen({ initial, onChange, onClose }: Props) {
 
   const provider = getProvider(s.provider);
   const kb = useKeyboardHeight();
+  const insets = useSafeAreaInsets();
 
   function persist(next: Settings) {
     const tv = trimmed(next);
@@ -103,7 +105,8 @@ export default function SettingsScreen({ initial, onChange, onClose }: Props) {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.content, { paddingBottom: 24 + kb }]}
+      // Clear the keyboard when open, else the Android navigation bar (edge-to-edge).
+      contentContainerStyle={[styles.content, { paddingBottom: 24 + (kb || insets.bottom) }]}
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.headerRow}>

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { StatusBar } from "expo-status-bar";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useShareIntent } from "expo-share-intent";
 import { loadSettings, saveSettings } from "./src/storage";
 import { prepareImageBase64, readPdfBase64 } from "./src/image";
@@ -128,6 +129,7 @@ export default function App() {
   }
 
   return (
+    <SafeAreaProvider>
     <I18nProvider language={resolveLanguage(settings.language)}>
     <View style={styles.shell}>
       <StatusBar style="dark" />
@@ -190,6 +192,7 @@ export default function App() {
       </View>
     </View>
     </I18nProvider>
+    </SafeAreaProvider>
   );
 }
 

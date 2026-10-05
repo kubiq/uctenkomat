@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { capturePhoto, pickImageUris } from "../pickers";
 import { useI18n } from "../i18n";
 import type { PickedFile } from "../types";
@@ -16,6 +17,7 @@ const isWeb = Platform.OS === "web";
 export default function MultiPageScreen({ onDone, onBack }: Props) {
   const { t } = useI18n();
   const [pages, setPages] = useState<string[]>([]);
+  const insets = useSafeAreaInsets();
 
   async function addPhoto() {
     const uri = await capturePhoto();
@@ -43,7 +45,8 @@ export default function MultiPageScreen({ onDone, onBack }: Props) {
   }
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    // Keep the bottom buttons clear of the Android navigation bar (edge-to-edge).
+    <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingBottom: 20 + insets.bottom }]}>
       <View style={styles.headerRow}>
         <Pressable onPress={onBack} hitSlop={12}>
           <Text style={styles.back}>{t("common.back")}</Text>
