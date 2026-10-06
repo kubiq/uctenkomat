@@ -41,6 +41,7 @@ export const de: Translations = {
     datePlaceholder: "2026-06-10",
     docNo: "Belegnummer",
     docPlaceholder: "vom Beleg",
+    currency: "Währung",
     supplier: "Lieferant",
     manualOverride: "Manuelle Auswahl · #%{id}",
     useAutoMatch: "Stattdessen automatisch zuordnen",

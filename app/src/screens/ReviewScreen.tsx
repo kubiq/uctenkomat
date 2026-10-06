@@ -15,6 +15,7 @@ import { useKeyboardHeight } from "../keyboard";
 import { showAlert, confirmDialog } from "../ui";
 import { useI18n } from "../i18n";
 import { vatDeductionAtRisk, SIMPLIFIED_DOC_LIMIT_CZK } from "../vat";
+import { currencyCode } from "../exchange";
 import type { Attachment, CreatedExpense, Receipt, Settings, Subject } from "../types";
 
 type Props = {
@@ -28,6 +29,9 @@ type Props = {
 };
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
+
+// Currencies offered on the review screen, home currency first.
+const COMMON_CURRENCIES = ["CZK", "EUR", "USD", "GBP", "PLN", "CHF"];
 
 function num(v: string): number | null {
   if (v.trim() === "") return null;
@@ -99,6 +103,10 @@ export default function ReviewScreen({
 
   const dupLabel = duplicate ? (duplicate.number ?? `#${duplicate.id}`) : "";
 
+  // The expense is created in this currency (no currency on the receipt = CZK).
+  // A parsed currency outside the common list gets its own chip.
+  const currency = currencyCode(receipt.currency);
+  const currencyChoices = COMMON_CURRENCIES.includes(currency) ? COMMON_CURRENCIES : [...COMMON_CURRENCIES, currency];
   function updateItem(i: number, patch: Partial<Receipt["items"][number]>) {
     setReceipt((r) => ({ ...r, items: r.items.map((it, idx) => (idx === i ? { ...it, ...patch } : it)) }));
   }
@@ -146,8 +154,7 @@ export default function ReviewScreen({
       showAlert(t("alerts.noSupplierTitle"), t("alerts.noSupplierMsg"));
       setShowSearch(true);
       return;
-    }
-    setSubmitting(true);
+    }    setSubmitting(true);
     try {
       // Omit subjectId -> resolve by IČO/DIČ/name; include it only when overriding.
       const cleanTags = provider.supportsTags ? tags : [];
@@ -221,6 +228,19 @@ export default function ReviewScreen({
         onChangeText={(v) => setReceipt((r) => ({ ...r, doc_number: v }))}
         placeholder={t("review.docPlaceholder")}
       />
+      <Text style={styles.label}>{t("review.currency")}</Text>
+      <View style={styles.chipRow}>
+        {currencyChoices.map((code) => (
+          <Pressable
+            key={code}
+            style={[styles.chip, currency === code && styles.chipActive]}
+            onPress={() => setReceipt((r) => ({ ...r, currency: code }))}
+            hitSlop={4}
+          >
+            <Text style={[styles.chipText, currency === code && styles.chipTextActive]}>{code}</Text>
+          </Pressable>
+        ))}
+      </View>
 
       {/* Supplier — auto by IČO, with manual override */}
       <Text style={styles.section}>{t("review.supplier")}</Text>
@@ -410,6 +430,11 @@ const styles = StyleSheet.create({
   dupBanner: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8, backgroundColor: "#fef3c7", borderColor: "#f59e0b", borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, marginTop: 8 },
   dupBannerText: { color: "#92400e", flex: 1, fontWeight: "600" },
   dupBannerLink: { color: "#2563eb", fontWeight: "700" },
+  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  chip: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 20, borderWidth: 1, borderColor: "#cbd5e1" },
+  chipActive: { backgroundColor: "#2563eb", borderColor: "#2563eb" },
+  chipText: { color: "#334155", fontWeight: "600" },
+  chipTextActive: { color: "#fff" },
   tagWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },
   tagChip: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#dbeafe", borderRadius: 16, paddingHorizontal: 12, paddingVertical: 6 },
   tagChipText: { color: "#1e3a8a", fontWeight: "600" },

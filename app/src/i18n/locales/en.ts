@@ -45,6 +45,7 @@ export const en = {
     datePlaceholder: "2026-06-10",
     docNo: "Document no.",
     docPlaceholder: "from the receipt",
+    currency: "Currency",
     supplier: "Supplier",
     manualOverride: "Manual override · #%{id}",
     useAutoMatch: "Use auto-match instead",

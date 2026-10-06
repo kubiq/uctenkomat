@@ -1,5 +1,6 @@
 import type { CreatedExpense, Receipt, Subject } from "../types";
 import type { AccountingProvider, CreateExpenseOpts, Creds } from "./provider";
+import { HOME_CURRENCY, cnbRate, currencyCode } from "../exchange";
 
 // iDoklad API v3. Auth is OAuth2 client-credentials against IdentityServer.
 const TOKEN_URL = "https://identity.idoklad.cz/server/connect/token";
@@ -45,6 +46,19 @@ async function countryIdFromDic(c: Creds, dic: string | null, fallback: number):
   const hit = items(await api(c, "GET", `/Countries?filter=${q}&pageSize=1`))[0];
   if (!hit) return fallback;
   countryIdCache.set(code, hit.Id);
+  return hit.Id;
+}
+
+// iDoklad identifies currencies by numeric CurrencyId; resolve the ISO 4217 code
+// via /Currencies. Ids are global (account-independent), so cache them.
+const currencyIdCache = new Map<string, number>();
+async function currencyId(c: Creds, code: string): Promise<number> {
+  const cached = currencyIdCache.get(code);
+  if (cached !== undefined) return cached;
+  const q = encodeURIComponent(`Code~eq~${code}`);
+  const hit = items(await api(c, "GET", `/Currencies?filter=${q}&pageSize=1`))[0];
+  if (!hit) throw new Error(`iDoklad doesn't know the currency ${code}`);
+  currencyIdCache.set(code, hit.Id);
   return hit.Id;
 }
 
@@ -190,8 +204,19 @@ async function createExpense(c: Creds, receipt: Receipt, opts: CreateExpenseOpts
   const model = unwrap(await api(c, "GET", "/ReceivedInvoices/Default"));
   const date = isoDate(receipt.date);
 
+  // The default model is in the home currency (CZK); a foreign receipt keeps its
+  // own currency, at the ČNB rate for the document date when it can be loaded
+  // (otherwise iDoklad's own default rate applies).
+  const currency = currencyCode(receipt.currency);
+  const foreign = currency !== HOME_CURRENCY;
+  const rate = foreign ? await cnbRate(currency, receipt.date) : null;
+  const currencyFields = foreign
+    ? { CurrencyId: await currencyId(c, currency), ...(rate ? { ExchangeRate: rate, ExchangeRateAmount: 1 } : {}) }
+    : {};
+
   const payload = {
     ...model,
+    ...currencyFields,
     PartnerId: subject.id,
     ...(date ? { DateOfIssue: date, DateOfReceiving: date, DateOfTaxing: date } : {}),
     Description: receipt.merchant ?? "Účtenka",

@@ -1,5 +1,6 @@
 import type { CreatedExpense, Receipt, Subject } from "../types";
 import type { AccountingProvider, CreateExpenseOpts, Creds } from "./provider";
+import { HOME_CURRENCY, cnbRate, currencyCode } from "../exchange";
 
 // Hermes (RN 0.74+) provides btoa globally; declare it for TypeScript.
 declare const btoa: (data: string) => string;
@@ -173,6 +174,13 @@ async function createExpense(c: Creds, receipt: Receipt, opts: CreateExpenseOpts
       });
 
   const tags = (opts.tags ?? []).map((t) => t.trim()).filter(Boolean);
+  // Left out, Fakturoid books the expense in the account currency (CZK). A
+  // foreign receipt keeps its own currency; Fakturoid then requires an exchange
+  // rate, so send the ČNB rate for the document date.
+  const currency = currencyCode(receipt.currency);
+  const foreign = currency !== HOME_CURRENCY;
+  const exchangeRate = foreign ? await cnbRate(currency, receipt.date) : null;
+  if (foreign && !exchangeRate) throw new Error(`Couldn't load the ČNB exchange rate for ${currency}, which Fakturoid requires.`);
   // A receipt is issued and taxable on the document date; when it's paid at the
   // till it's also due that day (align due_on too, avoiding Fakturoid's +14d
   // default). For an unpaid invoice we leave due_on to Fakturoid's default.
@@ -185,6 +193,7 @@ async function createExpense(c: Creds, receipt: Receipt, opts: CreateExpenseOpts
     issued_on: day,
     taxable_fulfillment_due: day,
     ...(opts.markPaid ? { due_on: day } : {}),
+    ...(foreign ? { currency, exchange_rate: String(exchangeRate) } : {}),
     // Fakturoid expenses accept a plain string array of tags.
     ...(tags.length ? { tags } : {}),
     ...(opts.attachments?.length ? { attachments: opts.attachments } : {}),

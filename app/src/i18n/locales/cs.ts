@@ -43,6 +43,7 @@ export const cs: Translations = {
     datePlaceholder: "2026-06-10",
     docNo: "Číslo dokladu",
     docPlaceholder: "z účtenky",
+    currency: "Měna",
     supplier: "Dodavatel",
     manualOverride: "Ruční volba · #%{id}",
     useAutoMatch: "Použít automatické spárování",
