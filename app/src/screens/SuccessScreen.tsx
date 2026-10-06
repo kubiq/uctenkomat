@@ -18,14 +18,16 @@ export default function SuccessScreen({ count, expense, onNew }: Props) {
         </Text>
       )}
 
-      {!multiple && expense?.url && (
-        <Pressable style={styles.link} onPress={() => Linking.openURL(expense.url!)}>
-          <Text style={styles.linkText}>{t("success.openInFakturoid")}</Text>
+      <View style={styles.buttons}>
+        {!multiple && expense?.url && (
+          <Pressable style={styles.link} onPress={() => Linking.openURL(expense.url!)}>
+            <Text style={styles.linkText}>{t("success.openInFakturoid")}</Text>
+          </Pressable>
+        )}
+        <Pressable style={styles.primary} onPress={onNew}>
+          <Text style={styles.primaryText}>{t("success.scanMore")}</Text>
         </Pressable>
-      )}
-      <Pressable style={styles.primary} onPress={onNew}>
-        <Text style={styles.primaryText}>{t("success.scanMore")}</Text>
-      </Pressable>
+      </View>
     </View>
   );
 }
@@ -35,8 +37,10 @@ const styles = StyleSheet.create({
   check: { fontSize: 64, color: "#16a34a" },
   title: { fontSize: 24, fontWeight: "700" },
   muted: { color: "#64748b" },
-  link: { marginTop: 16, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 10, borderWidth: 1, borderColor: "#2563eb" },
-  linkText: { color: "#2563eb", fontSize: 16, fontWeight: "600" },
-  primary: { marginTop: 8, backgroundColor: "#2563eb", paddingVertical: 16, paddingHorizontal: 32, borderRadius: 12 },
-  primaryText: { color: "#fff", fontSize: 17, fontWeight: "700" },
+  // One fixed-width column so both buttons line up regardless of label length.
+  buttons: { width: "100%", maxWidth: 320, gap: 12, marginTop: 16 },
+  link: { minHeight: 52, justifyContent: "center", alignItems: "center", paddingHorizontal: 20, borderRadius: 12, borderWidth: 1.5, borderColor: "#2563eb" },
+  linkText: { color: "#2563eb", fontSize: 16, fontWeight: "600", textAlign: "center" },
+  primary: { minHeight: 56, justifyContent: "center", alignItems: "center", paddingHorizontal: 20, backgroundColor: "#2563eb", borderRadius: 12 },
+  primaryText: { color: "#fff", fontSize: 17, fontWeight: "700", textAlign: "center" },
 });
